@@ -160,13 +160,31 @@ smache_info(smache* instance, smache_hash* hash, size_t* length)
 }
 
 static smache_error
+_smache_put(smache* instance, smache_hash* rval, smache_chunk* chunk)
+{
+    struct backend_list* backends = &(instance->internals->backends);
+
+    if( backends->current != NULL )
+    {
+        backends->current->put(backends->current, hash, chunk);
+    }
+
+    return SMACHE_SUCCESS;
+}
+
+static smache_error
 _smache_get(smache* instance, smache_hash* hash, size_t offset, void* data, size_t* length)
 {
     smache_chunk* chunk = malloc(sizeof(smache_chunk) + SMACHE_MAXIMUM_CHUNKSIZE);
     struct backend_list* backends = &(instance->internals->backends);
 
+    /*
+     * Loop through all the backends.
+     */
     while( backends->current != NULL )
     {
+        smache_error rval = SMACHE_SUCCESS;
+
         /*
          * We found the thing in a backend.
          */
@@ -201,18 +219,27 @@ _smache_get(smache* instance, smache_hash* hash, size_t offset, void* data, size
 
                 smache_hash* newhash = metahash[index].hash;
                 size_t newoffset     = (offset - metahash[index].offset);
-                smache_error rval    = smache_get(instance, newhash, newoffset, data, length);
-                smache_release(chunk, uncompressed);
-                return rval;
+                rval                 = smache_get(instance, newhash, newoffset, data, length);
             }
             else
             {
                 size_t minlength = *length < (uncompressed_length - offset) ? *length : (uncompressed_length - offset);
                 memcpy(data, uncompressed, minlength);
                 *length = minlength;
-                smache_release(chunk, uncompressed);
-                return SMACHE_SUCCESS;
             }
+
+            /*
+             * Put the data back into our local cache.
+             */
+            if( rval == SMACHE_SUCCESS )
+            {
+                _smache_put(instance, hash, chunk);
+            }
+
+            /*
+             * Release the compressed version.
+             */
+            smache_release(chunk, uncompressed);
         }
 
         /*
@@ -229,10 +256,13 @@ smache_get(smache* instance, smache_hash* hash, size_t offset, void* data, size_
 {
     smache_error rval = SMACHE_SUCCESS;
 
+    /*
+     * Loop through and call get repeatedly.
+     */
     while( length > 0 && rval == SMACHE_SUCCESS )
     {
         size_t thislength = length;
-        _smache_get(instance, hash, offset, data, &thislength);
+        rval = _smache_get(instance, hash, offset, data, &thislength);
         data = (void*)(((unsigned char*)data) + thislength);
         length -= thislength;
         offset += thislength;
@@ -242,22 +272,32 @@ smache_get(smache* instance, smache_hash* hash, size_t offset, void* data, size_
 }
 
 static smache_error
-_smache_put(smache* instance, smache_hash* rval, void* data, size_t length, smache_block_algorithm block, smache_compression_type compression)
+smache_put_fixed(smache* instance, smache_hash* rval, void* data, size_t length, smache_compression_type compression)
 {
-    struct backend_list* backends = &(instance->internals->backends);
-
-    while( backends->current != NULL )
+    if( length > SMACHE_MAXIMUM_CHUNKSIZE )
     {
-        // backends->current->put(backends->current, hash);
-        backends = backends->next;
-    }
+        /*
+         * We are making at least one metahash.
+         */
+        length / SMACHE_METAHASH_COUNT
 
-    return SMACHE_SUCCESS;
+    }
+    else
+    {
+    }
 }
 
-static smache_error
-_smache_put(smache* instance, smache_hash* rval, void* data, size_t length, smache_block_algorithm block, smache_compression_type compression)
+smache_error
+smache_put(smache* instance, smache_hash* rval, void* data, size_t length, smache_block_algorithm block, smache_compression_type compression)
 {
+    switch( block )
+    {
+        case SMACHE_FIXED:
+        return smache_put_fixed(instance, rval, data, length, compression);
+        default:
+        fprintf(stderr, "put: Unknown block algorithm %d.\n", block);
+        return SMACHE_ERROR;
+    }
 }
 
 smache_error
