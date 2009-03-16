@@ -14,12 +14,8 @@
  * (Used for all functions below).
  */
 
-typedef enum {
-    SMACHE_SUCCESS = 0,
-    SMACHE_NOEXIST = 1,    /* Key does not exist. */
-    SMACHE_NOSUPP  = 2,    /* Parameter not supported. */
-    SMACHE_ERROR   = 255   /* Unknown/other error. (Check errno) */
-} smache_error;
+#define SMACHE_SUCCESS (0)
+#define SMACHE_ERROR   (1)
 
 /*
  * Different compression algorithms.
@@ -43,6 +39,9 @@ typedef struct {
     unsigned char val[16];
 } smache_hash;
 
+smache_hash* smache_create_hash(void);
+void smache_delete_hash(smache_hash*);
+
 typedef struct {
     /*
      * If this is a metahash, then the data is a list
@@ -56,14 +55,16 @@ typedef struct {
     unsigned char data[0];
 } __attribute__((packed)) smache_chunk;
 
+smache_chunk* smache_create_chunk(void);
+void smache_delete_chunk(smache_chunk*);
+
 typedef struct {
     uint32_t    offset;
     smache_hash hash;
 } smache_metahash;
 
 #define SMACHE_MAXIMUM_CHUNKSIZE  (0xffff)
-#define SMACHE_METAHASH_CHUNKSIZE (SMACHE_MAXIMUM_CHUNKSIZE)
-#define SMACHE_METAHASH_COUNT     (SMACHE_METAHASH_CHUNKSIZE >> 3)
+#define SMACHE_METAHASH_COUNT(l)  (l >> 3)
 
 /*
  * Definitions for the backend, remote and smache instance.
@@ -73,10 +74,10 @@ typedef struct struct_smache_backend {
     uint8_t  push     :1;
     uint32_t reserved :31;
 
-    smache_error (*get)(struct struct_smache_backend*, smache_hash*, smache_chunk*);
-    smache_error (*put)(struct struct_smache_backend*, smache_hash*, smache_chunk*);
-    smache_error (*delete)(struct struct_smache_backend*, smache_hash*);
-    smache_error (*close)(struct struct_smache_backend*);
+    int (*get)(struct struct_smache_backend*, smache_hash*, smache_chunk*);
+    int (*put)(struct struct_smache_backend*, smache_hash*, smache_chunk*);
+    int (*delete)(struct struct_smache_backend*, smache_hash*);
+    int (*close)(struct struct_smache_backend*);
 
     void* internals;
 
@@ -95,24 +96,46 @@ smache_backend* smache_memcached_backend(const char* spec);
 smache_backend* smache_remote_backend(int socket);
 
 /*
+ * Hash helpers.
+ */
+int smache_computehash(smache_hash*, const void* data, size_t length);
+int smache_parsehash(smache_hash*, const char*);
+char* smache_create_hashstr(smache_hash*);
+void smache_delete_hashstr(char* hash);
+
+/*
+ * Compression helpers.
+ */
+
+int smache_uncompress(smache_chunk*, void** data, size_t* length);
+int smache_compress(smache_chunk*, void** data, size_t* length);
+int smache_release(smache_chunk*, void* data);
+
+/*
  * Constructor for a smache instance.
  */
 
-smache* smache_create();
-smache_error smache_add_backend(smache*, smache_backend*);
+smache* smache_create(void);
+int smache_add_backend(smache*, smache_backend*);
 void smache_destroy(smache*);
 
 /*
  * Operations for sending/receiving data.
  */
-smache_error smache_info(smache*, smache_hash*, size_t* length);
-smache_error smache_get(smache*, smache_hash*, size_t offset, void* data, size_t length);
-smache_error smache_put(smache*, smache_hash* rval, void* data, size_t length, smache_block_algorithm, smache_compression_type compression);
-smache_error smache_delete(smache*, smache_hash*);
+int smache_info(smache*, smache_hash*, size_t* length);
+int smache_get(smache*, smache_hash*, size_t offset, void* data, size_t length);
+int smache_put(smache*, smache_hash* rval, size_t offset, void* data, size_t length, smache_block_algorithm, smache_compression_type compression);
+int smache_delete(smache*, smache_hash*);
+
+/*
+ * Useful functions for sending/receiving files.
+ */
+int smache_getfile(smache*, smache_hash*, const char* filename);
+int smache_putfile(smache*, smache_hash*, const char* filename, smache_block_algorithm block, smache_compression_type compression);
 
 /*
  * Option to start serving.
  */
-smache_error smache_server(unsigned short port);
+int smache_server(unsigned short port);
 
 #endif /* _SMACHE_H_ */

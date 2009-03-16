@@ -1,0 +1,85 @@
+#!/usr/bin/env python
+
+import smache
+import sys
+import os
+
+def loadindex(filename):
+    #
+    # Load the index for this instance.
+    #
+    index = dict()
+    try:
+        f = open(filename + ".index", "r")
+        for l in f.readlines():
+            try:
+                (hash, filename) = l.split(' ', 1)
+            except:
+                continue
+            index[filename] = hash
+        f.close()
+    except:
+        pass
+    return index
+
+def saveindex(filename, index):
+    #
+    # Try to save the index file.
+    #
+    f = open(filename + ".index", "w")
+    for k in index.keys():
+        hash = index[k]
+        f.write("%s %s\n" % (hash, k))
+        f.flush()
+    f.close()
+
+def extract(sm, index, files):
+    for file in files:
+        (dirname, filename) = os.path.split(file)
+        if dirname and not(os.path.exists(dirname)):
+            os.makedirs(dirname)
+        hash = index[file]
+        sm.getfile(hash, file)
+
+def add(sm, index, files):
+    for file in files:
+        if os.path.isdir(file):
+            for root, dirs, files in os.walk(file):
+                add(sm, index, map(lambda x: os.path.join(root, x), files))
+        else:
+            hash = sm.addfile(file)
+            index[file] = hash
+
+def usage(args):
+    print "usage: %s <x|a> <database> [files....]" % (args[0])
+    print " x - Extract listed files."
+    print " a - Add listed files."
+
+def main(args):
+    if len(args) < 3:
+        usage(args)
+        return
+
+    #
+    # Create a smache instance.
+    #
+    sm = smache.Smache()
+    backend = smache.BerkeleyDB(sm, args[2])
+    index = loadindex(args[2])
+
+    #
+    # Actually extract/add appropriate files.
+    #
+    if args[1] == "x":
+        if len(args) == 3:
+            extract(sm, index, index.keys())
+        else:
+            extract(sm, index, args[3:])
+
+    elif args[1] == "a":
+        add(sm, index, args[3:])
+
+    saveindex(args[2], index)
+
+if __name__ == "__main__":
+    main(sys.argv)

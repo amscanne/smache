@@ -2,10 +2,10 @@
  * smache.c
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <mhash.h>
 #include <smache/smache.h>
 
 struct backend_list {
@@ -21,6 +21,7 @@ struct socket_list {
 struct smache_priv {
     struct backend_list backends;
 };
+
 
 /*
  * Constructor and modifiers for a smache instance.
@@ -52,19 +53,25 @@ smache_destroy(smache* instance)
 {
     struct backend_list* backends = &(instance->internals->backends);
 
+    /*
+     * Call close on all the backends.
+     */
     while( backends->current != NULL )
     {
         backends->current->close(backends->current);
         struct backend_list* last_backend = backends;
         backends = backends->next;
-        free(last_backend);
+        if( last_backend != &(instance->internals->backends) )
+        {
+            free(last_backend);
+        }
     }
 
     free(instance->internals);
     free(instance);
 }
 
-smache_error
+int
 smache_add_backend(smache* instance, smache_backend* backend)
 {
     struct backend_list* backends = &(instance->internals->backends);
@@ -85,61 +92,13 @@ smache_add_backend(smache* instance, smache_backend* backend)
     return SMACHE_SUCCESS;
 }
 
-smache_error
-smache_uncompress(smache_chunk* chunk, void** data, size_t* length)
-{
-    if( chunk->compression_type != SMACHE_NONE )
-    {
-        fprintf(stderr, "compression: Unsupported type.\n");
-        return SMACHE_ERROR;
-    }
-
-    *data   = chunk->data;
-    *length = chunk->length; 
-    return SMACHE_SUCCESS;
-}
-
-smache_error
-smache_release(smache_chunk* chunk, void* data)
-{
-    return SMACHE_SUCCESS;
-}
-
-smache_error
-smache_gethash(smache* instance, smache_hash* hash, const void* data, size_t length)
-{
-    /*
-     * Initialize the hash context.
-     */
-    MHASH td;
-    td = mhash_init(MHASH_MD5);
-    if( td == MHASH_FAILED || mhash_get_block_size(MHASH_MD5) != 16 )
-    {
-        fprintf(stderr, "mhash: Failed to initialize.\n");
-        return SMACHE_ERROR;
-    }
-
-    /*
-     * Perform the hash.
-     */
-    mhash(td, (unsigned char*)data, length);
-   
-    /*
-     * Save the hash result.
-     */ 
-    unsigned char* val = mhash_end(td);
-    memcpy(hash, val, sizeof(*hash));
-
-    return SMACHE_SUCCESS;
-}
-
-smache_error
+int
 smache_info(smache* instance, smache_hash* hash, size_t* length)
 {
     return SMACHE_SUCCESS;
 }
 
-static smache_error
+static int
 _smache_put(smache* instance, smache_hash* hash, smache_chunk* chunk)
 {
     struct backend_list* backends = &(instance->internals->backends);
@@ -156,10 +115,10 @@ _smache_put(smache* instance, smache_hash* hash, smache_chunk* chunk)
     return SMACHE_SUCCESS;
 }
 
-static smache_error
+static int
 _smache_get(smache* instance, smache_hash* hash, size_t offset, void* data, size_t* length)
 {
-    smache_chunk* chunk = malloc(sizeof(smache_chunk) + SMACHE_MAXIMUM_CHUNKSIZE);
+    smache_chunk* chunk = smache_create_chunk();
     struct backend_list* backends = &(instance->internals->backends);
 
     /*
@@ -167,7 +126,7 @@ _smache_get(smache* instance, smache_hash* hash, size_t offset, void* data, size
      */
     while( backends->current != NULL )
     {
-        smache_error rval = SMACHE_SUCCESS;
+        int rval = SMACHE_SUCCESS;
 
         /*
          * We found the thing in a backend.
@@ -181,7 +140,7 @@ _smache_get(smache* instance, smache_hash* hash, size_t offset, void* data, size
             size_t uncompressed_length;
             if( smache_uncompress(chunk, &uncompressed, &uncompressed_length) != SMACHE_SUCCESS )
             {
-                free(chunk);
+                smache_delete_chunk(chunk);
                 return SMACHE_ERROR;
             }
 
@@ -232,13 +191,14 @@ _smache_get(smache* instance, smache_hash* hash, size_t offset, void* data, size
         backends = backends->next;
     }
 
+    smache_delete_chunk(chunk);
     return SMACHE_SUCCESS;
 }
 
-smache_error
+int
 smache_get(smache* instance, smache_hash* hash, size_t offset, void* data, size_t length)
 {
-    smache_error rval = SMACHE_SUCCESS;
+    int rval = SMACHE_SUCCESS;
 
     /*
      * Loop through and call get repeatedly.
@@ -255,8 +215,8 @@ smache_get(smache* instance, smache_hash* hash, size_t offset, void* data, size_
     return rval;
 }
 
-static smache_error
-smache_put_fixed(smache* instance, smache_hash* rval, void* data, size_t length, smache_compression_type compression)
+static int
+smache_put_fixed(smache* instance, smache_hash* rval, size_t offset, void* data, size_t length, smache_compression_type compression)
 {
     if( length > SMACHE_MAXIMUM_CHUNKSIZE )
     {
@@ -269,23 +229,29 @@ smache_put_fixed(smache* instance, smache_hash* rval, void* data, size_t length,
     {
     }
 
+    int i = 0;
+    for( i = 0; i < 16; i++ )
+    {
+        rval->val[i] = i;
+    }
+
     return SMACHE_ERROR;
 }
 
-smache_error
-smache_put(smache* instance, smache_hash* rval, void* data, size_t length, smache_block_algorithm block, smache_compression_type compression)
+int
+smache_put(smache* instance, smache_hash* rval, size_t offset, void* data, size_t length, smache_block_algorithm block, smache_compression_type compression)
 {
     switch( block )
     {
         case SMACHE_FIXED:
-        return smache_put_fixed(instance, rval, data, length, compression);
+        return smache_put_fixed(instance, rval, offset, data, length, compression);
         default:
         fprintf(stderr, "put: Unknown block algorithm %d.\n", block);
         return SMACHE_ERROR;
     }
 }
 
-smache_error
+int
 smache_delete(smache* instance, smache_hash* hash)
 {
     struct backend_list* backends = &(instance->internals->backends);

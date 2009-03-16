@@ -6,87 +6,90 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <smache/smache.h>
 
-int
-usage(int argc, char** argv)
+int smache_putfile(smache* sm, smache_hash* hash, const char* filename, smache_block_algorithm block, smache_compression_type compression)
 {
-    printf("usage: %s <x|a> <archive> [files ...]\n", argv[0]);
-    printf(" x - Extract the given archive.\n");
-    printf(" a - Add to the given archive.\n");
-    printf(" You must specify one of x or c.\n");
-    return 0;
+    int filedes = open(filename, O_CREAT|O_RDONLY);
+
+    /*
+     * Stat the file.
+     */
+    struct stat statbuf;
+    if( fstat(filedes, &statbuf) < 0 )
+    {
+        fprintf(stderr, "error: unable to stat %s.\n", filename);
+        close(filedes);
+        return SMACHE_ERROR;
+    }
+
+    /*
+     * Map the file.
+     */
+    size_t length = statbuf.st_size;
+    void* map_region = mmap(NULL, length, PROT_READ, MAP_SHARED, filedes, 0);
+    if( map_region == NULL )
+    {
+        fprintf(stderr, "error: mmap failed.\n");
+        close(filedes);
+        return SMACHE_ERROR;
+    }
+    if( smache_put(sm, hash, 0, map_region, length, block, compression) != SMACHE_SUCCESS )
+    {
+        munmap(map_region, length);
+        close(filedes);
+        return SMACHE_ERROR;
+    }
+
+    /*
+     * Unmap the region and close the file.
+     */
+    munmap(map_region, length);
+    close(filedes);
+
+    return SMACHE_SUCCESS;
 }
 
-int
-main (int argc, char** argv)
+
+int smache_getfile(smache* sm, smache_hash* hash, const char* filename)
 {
     /*
-     * Parse the options.
+     * Given the correct hash, stat the file.
      */
-    if( argc < 3 || argv[1][1] != '\0' || !(argv[1][0] == 'x' || argv[1][0] == 'a') )
+    size_t length;
+    if( smache_info(sm, hash, &length) != SMACHE_SUCCESS )
     {
-        return usage(argc, argv);
-    }
-    create = (argv[1][0] == 'c');
-
-    /*
-     * Create the backend.
-     */
-    smache* sm = smache_create();
-    smache_backend* bdb = smache_berkeleydb_backend(argv[2]);
-    bdb.push = 1; /* Mark this backend as the 'push' backend. */
-    if( sm == NULL ||  bdb == NULL || (smache_add_backend(sm, bdb) != SMACHE_SUCCESS) )
-    {
-        return 1;
+        fprintf(stderr, "error: unable to stat %s.\n", filename);
+        return SMACHE_ERROR;
     }
 
     /*
-     * Add or remove files.
+     * Actually write the file out.
      */
-    if( create )
+    int filedes = open(filename, O_CREAT|O_WRONLY);
+    void* map_region = mmap(NULL, length, PROT_WRITE, MAP_SHARED, filedes, 0);
+    if( map_region == NULL )
     {
-        for( int fileno = 3; fileno < argc; fileno++ )
-        {
-            smache_
-            // ...
-        }
+        fprintf(stderr, "error: mmap failed.\n");
+        close(filedes);
+        return SMACHE_ERROR;
     }
-    else
+    if( smache_get(sm, hash, 0, map_region, length) != SMACHE_SUCCESS )
     {
-        if( argc > 3 )
-        {
-            for( int fileno = 3; fileno < argc; fileno++ )
-            {
-                /*
-                 * Check the format of this hash (it must be a hash!)
-                 */
-                smache_hash hash;
-
-                /*
-                 * Given the correct hash, stat the file.
-                 */
-                size_t length;
-                if( smache_info(sm, &hash, &length) != SMACHE_SUCCESS )
-                {
-                    fprintf(stderr, "error: unable to stat %s.\n", argv[fileno]);
-                    continue;
-                }
-
-                /*
-                 * Actually write the file out.
-                 */
-                int filedes = open(argv[fileno], O_CREAT|O_WRONLY);
-                void* map_region = mmap(NULL, length, PROT_WRITE, MAP_SHARED, filedes, 0);
-                if( smache_get(sm, &hash, 0, map_region, length) != SMACHE_SUCCESS )
-                {
-                }
-            }
-        }
-        else
-        {
-            fprintf("Sorry, indexes are not currently supported.\n");
-        }
+        munmap(map_region, length);
+        close(filedes);
+        return SMACHE_ERROR;
     }
 
-    return 0;
+    /*
+     * Unmap the region and close the file.
+     */
+    munmap(map_region, length);
+    close(filedes);
+
+    return SMACHE_SUCCESS;
 }

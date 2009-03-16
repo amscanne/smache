@@ -1,9 +1,9 @@
 #!/usr/bin/make -f
 
 LIBRARY=libsmache.so
-OBJECTS=berkeleydb.o memcached.o protocol.o smache.o
+OBJECTS=berkeleydb.o memcached.o protocol.o smache.o misc.o files.o hash.o compress.o
 CFLAGS:=-Wall -fPIC -I../include -I/opt/local/include
-LIBTOOLFLAGS:=-lc -lmhash -L/opt/local/lib
+LIBTOOLFLAGS:=-lc -lmhash -ldb -L/opt/local/lib
 CC:=gcc
 
 all: $(LIBRARY)

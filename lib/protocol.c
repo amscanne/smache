@@ -5,25 +5,25 @@
 #include <stdlib.h>
 #include <smache/smache.h>
 
-static smache_error
+static int
 remote_get(smache_backend* backend, smache_hash* hash, smache_chunk* data)
 {
     return SMACHE_SUCCESS;
 }
 
-static smache_error
+static int
 remote_put(smache_backend* backend, smache_hash* hash, smache_chunk* data)
 {
     return SMACHE_SUCCESS;
 }
 
-static smache_error
+static int
 remote_delete(smache_backend* backend, smache_hash* hash)
 {
     return SMACHE_SUCCESS;
 }
 
-static smache_error
+static int
 remote_close(smache_backend* backend)
 {
     close((int)backend->internals);
@@ -47,4 +47,10 @@ smache_remote_backend(int socket)
     remote->close     = &remote_close;
 
     return remote;
+}
+
+int
+smache_server(unsigned short port)
+{
+    return SMACHE_SUCCESS;
 }

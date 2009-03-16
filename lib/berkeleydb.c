@@ -22,7 +22,7 @@
 #define DBCLOSE(x)         x->close(x, 0)
 #endif
 
-static smache_error
+static int
 bdb_get(smache_backend* backend, smache_hash* hash, smache_chunk* data)
 {
     DB* dbp = (DB*)(backend->internals);
@@ -42,7 +42,7 @@ bdb_get(smache_backend* backend, smache_hash* hash, smache_chunk* data)
     return SMACHE_SUCCESS;
 }
 
-static smache_error
+static int
 bdb_put(smache_backend* backend, smache_hash* hash, smache_chunk* data)
 {
     DB* dbp = (DB*)(backend->internals);
@@ -62,7 +62,7 @@ bdb_put(smache_backend* backend, smache_hash* hash, smache_chunk* data)
     return SMACHE_SUCCESS;
 }
 
-static smache_error
+static int
 bdb_delete(smache_backend* backend, smache_hash* hash)
 {
     DB* dbp = (DB*)(backend->internals);
@@ -78,7 +78,7 @@ bdb_delete(smache_backend* backend, smache_hash* hash)
     return SMACHE_SUCCESS;
 }
  
-static smache_error
+static int
 bdb_close(smache_backend* backend)
 {
     DB* dbp = (DB*)(backend->internals);
@@ -108,7 +108,7 @@ smache_backend* smache_berkeleydb_backend(const char* filename)
         return NULL;
     }
     
-    if( dbp->open(dbp, NULL, filename, NULL, DB_BTREE, O_CREAT, 0644) )
+    if( dbp->open(dbp, NULL, filename, "smache", DB_BTREE, DB_CREATE, 0644) )
     {
         fprintf(stderr, "dbopen: %s\n", strerror(errno));
         DBCLOSE(dbp);
