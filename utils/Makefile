@@ -18,7 +18,7 @@ clean:
 smachezip: smachezip.o
 	$(LD) -o $@ $(LDFLAGS) $^
 
-smache: smache.o server.o client.o
+smache: smache.o
 	$(LD) -o $@ $(LDFLAGS) $^
 
 %.o: %.c

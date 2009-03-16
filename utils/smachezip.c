@@ -34,6 +34,7 @@ main (int argc, char** argv)
      */
     smache* sm = smache_create();
     smache_backend* bdb = smache_berkeleydb_backend(argv[2]);
+    bdb.push = 1; /* Mark this backend as the 'push' backend. */
     if( sm == NULL ||  bdb == NULL || (smache_add_backend(sm, bdb) != SMACHE_SUCCESS) )
     {
         return 1;
@@ -46,6 +47,7 @@ main (int argc, char** argv)
     {
         for( int fileno = 3; fileno < argc; fileno++ )
         {
+            smache_
             // ...
         }
     }
@@ -55,18 +57,34 @@ main (int argc, char** argv)
         {
             for( int fileno = 3; fileno < argc; fileno++ )
             {
+                /*
+                 * Check the format of this hash (it must be a hash!)
+                 */
                 smache_hash hash;
-                if( smache_lookup(argv[fileno], &hash) != SMACHE_SUCCESS )
+
+                /*
+                 * Given the correct hash, stat the file.
+                 */
+                size_t length;
+                if( smache_info(sm, &hash, &length) != SMACHE_SUCCESS )
                 {
-                    fprintf(stderr, "error: unable to find %s.\n", argv[fileno]);
+                    fprintf(stderr, "error: unable to stat %s.\n", argv[fileno]);
                     continue;
                 }
-                // ...
+
+                /*
+                 * Actually write the file out.
+                 */
+                int filedes = open(argv[fileno], O_CREAT|O_WRONLY);
+                void* map_region = mmap(NULL, length, PROT_WRITE, MAP_SHARED, filedes, 0);
+                if( smache_get(sm, &hash, 0, map_region, length) != SMACHE_SUCCESS )
+                {
+                }
             }
         }
         else
         {
-            // ...
+            fprintf("Sorry, indexes are not currently supported.\n");
         }
     }
 

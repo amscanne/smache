@@ -70,12 +70,17 @@ typedef struct {
  */
 
 typedef struct struct_smache_backend {
+    uint8_t  push     :1;
+    uint32_t reserved :31;
+
     smache_error (*get)(struct struct_smache_backend*, smache_hash*, smache_chunk*);
     smache_error (*put)(struct struct_smache_backend*, smache_hash*, smache_chunk*);
     smache_error (*delete)(struct struct_smache_backend*, smache_hash*);
     smache_error (*close)(struct struct_smache_backend*);
+
     void* internals;
-} smache_backend;
+
+} __attribute__((packed)) smache_backend;
 
 typedef struct {
     struct smache_priv* internals;
@@ -95,15 +100,11 @@ smache_backend* smache_remote_backend(int socket);
 
 smache* smache_create();
 smache_error smache_add_backend(smache*, smache_backend*);
+void smache_destroy(smache*);
 
 /*
  * Operations for sending/receiving data.
  */
-
-smache_error smache_lookup(smache*, char* path, smache_hash*);
-smache_error smache_addindex(smache*, char* path, smache_hash*);
-smache_error smache_delindex(smache*, char* path);
-
 smache_error smache_info(smache*, smache_hash*, size_t* length);
 smache_error smache_get(smache*, smache_hash*, size_t offset, void* data, size_t length);
 smache_error smache_put(smache*, smache_hash* rval, void* data, size_t length, smache_block_algorithm, smache_compression_type compression);

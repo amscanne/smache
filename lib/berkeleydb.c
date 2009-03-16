@@ -10,6 +10,18 @@
 #include <db.h>
 #include <smache/smache.h>
 
+#ifdef __APPLE__
+#define DBGET(x, key, val) x->get(x, &key, &val, 0)
+#define DBPUT(x, key, val) x->put(x, &key, &val, 0)
+#define DBDEL(x, key)      x->del(x, &key, 0)
+#define DBCLOSE(x)         x->close(x)
+#else
+#define DBGET(x, key, val) x->get(x, NULL, &key, &val, 0)
+#define DBPUT(x, key, val) x->put(x, NULL, &key, &val, 0)
+#define DBDEL(x, key)      x->del(x, NULL, &key, 0)
+#define DBCLOSE(x)         x->close(x, 0)
+#endif
+
 static smache_error
 bdb_get(smache_backend* backend, smache_hash* hash, smache_chunk* data)
 {
@@ -23,14 +35,11 @@ bdb_get(smache_backend* backend, smache_hash* hash, smache_chunk* data)
     val.data = data;
     val.size = sizeof(*data) + data->length;
 
-    if( dbp->get(dbp, &key, &val, 0) )
+    if( DBGET(dbp, key, val) )
     {
         return SMACHE_ERROR;
     }
-    else
-    {
-        return SMACHE_SUCCESS;
-    }
+    return SMACHE_SUCCESS;
 }
 
 static smache_error
@@ -46,14 +55,11 @@ bdb_put(smache_backend* backend, smache_hash* hash, smache_chunk* data)
     val.data = data;
     val.size = sizeof(*data) + data->length;
    
-    if( dbp->put(dbp, &key, &val, 0) )
+    if( DBPUT(dbp, key, val) )
     {
         return SMACHE_ERROR;
     }
-    else
-    {
-        return SMACHE_SUCCESS;
-    }
+    return SMACHE_SUCCESS;
 }
 
 static smache_error
@@ -65,11 +71,10 @@ bdb_delete(smache_backend* backend, smache_hash* hash)
     key.data = hash;
     key.size = sizeof(*hash);
 
-    if( dbp->del(dbp, &key, 0) )
+    if( DBDEL(dbp, key) )
     {
         return SMACHE_ERROR;
     }
-
     return SMACHE_SUCCESS;
 }
  
@@ -78,16 +83,13 @@ bdb_close(smache_backend* backend)
 {
     DB* dbp = (DB*)(backend->internals);
 
-    if( dbp->close(dbp) == 0 )
-    {
-        free(backend);
-        return SMACHE_SUCCESS;
-    }
-    else
+    if( DBCLOSE(dbp) != 0 )
     {
         free(backend);
         return SMACHE_ERROR;
     }
+    free(backend);
+    return SMACHE_SUCCESS;
 }
 
 smache_backend* smache_berkeleydb_backend(const char* filename)
@@ -98,14 +100,23 @@ smache_backend* smache_berkeleydb_backend(const char* filename)
         return NULL;
     }
 
-    res->internals = (void*)dbopen(filename, O_CREAT, 0644, DB_BTREE, NULL);
-    if( res->internals == NULL )
+    DB* dbp = NULL;
+    if( db_create(&dbp, NULL, 0) != 0 )
     {
-        fprintf(stderr, "db_create: %s\n", strerror(errno));
-        free(res);    
+        fprintf(stderr, "dbopen: %s\n", strerror(errno));
+        free(res);
+        return NULL;
+    }
+    
+    if( dbp->open(dbp, NULL, filename, NULL, DB_BTREE, O_CREAT, 0644) )
+    {
+        fprintf(stderr, "dbopen: %s\n", strerror(errno));
+        DBCLOSE(dbp);
+        free(res);
         return NULL;
     }
 
+    res->internals = (void*)dbp;
     res->get       = &bdb_get;
     res->put       = &bdb_put;
     res->delete    = &bdb_delete;

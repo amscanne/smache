@@ -47,7 +47,7 @@ smache_create()
     return instance;
 }
 
-smache_error
+void
 smache_destroy(smache* instance)
 {
     struct backend_list* backends = &(instance->internals->backends);
@@ -62,8 +62,6 @@ smache_destroy(smache* instance)
 
     free(instance->internals);
     free(instance);
-
-    return SMACHE_SUCCESS;
 }
 
 smache_error
@@ -136,37 +134,23 @@ smache_gethash(smache* instance, smache_hash* hash, const void* data, size_t len
 }
 
 smache_error
-smache_lookup(smache* instance, char* path, smache_hash* hash)
-{
-    return SMACHE_SUCCESS;
-}
-
-smache_error
-smache_addindex(smache* instance, char* path, smache_hash* hash)
-{
-    return SMACHE_SUCCESS;
-}
-
-smache_error
-smache_delindex(smache* instance, char* path)
-{
-    return SMACHE_SUCCESS;
-}
-
-smache_error
 smache_info(smache* instance, smache_hash* hash, size_t* length)
 {
     return SMACHE_SUCCESS;
 }
 
 static smache_error
-_smache_put(smache* instance, smache_hash* rval, smache_chunk* chunk)
+_smache_put(smache* instance, smache_hash* hash, smache_chunk* chunk)
 {
     struct backend_list* backends = &(instance->internals->backends);
 
-    if( backends->current != NULL )
+    while( backends->current != NULL )
     {
-        backends->current->put(backends->current, hash, chunk);
+        if( backends->current->push )
+        {
+            backends->current->put(backends->current, hash, chunk);
+        }
+        backends = backends->next;
     }
 
     return SMACHE_SUCCESS;
@@ -217,9 +201,9 @@ _smache_get(smache* instance, smache_hash* hash, size_t offset, void* data, size
                     }
                 }
 
-                smache_hash* newhash = metahash[index].hash;
-                size_t newoffset     = (offset - metahash[index].offset);
-                rval                 = smache_get(instance, newhash, newoffset, data, length);
+                smache_hash newhash = metahash[index].hash;
+                size_t newoffset    = (offset - metahash[index].offset);
+                rval                = _smache_get(instance, &newhash, newoffset, data, length);
             }
             else
             {
@@ -278,13 +262,14 @@ smache_put_fixed(smache* instance, smache_hash* rval, void* data, size_t length,
     {
         /*
          * We are making at least one metahash.
+         * Divide up into chunks of a fixed size.
          */
-        length / SMACHE_METAHASH_COUNT
-
     }
     else
     {
     }
+
+    return SMACHE_ERROR;
 }
 
 smache_error
