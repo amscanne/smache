@@ -22,47 +22,62 @@ typedef enum {
 } smache_error;
 
 /*
- * Data definitions.
+ * Different compression algorithms.
+ * By default, we use no compression.
  */
-
-typedef void* smache_hash;
-
-typedef struct {
-    uint16_t flags;
-    uint16_t length;
-} __attribute__((packed)) smache_metadata;
-
-typedef void* smache_data;
-
-/*
- * Different hash and block function types.
- */
-
-typedef enum {
-    SMACHE_SHA1 = 0
-} smache_hash_type;
 
 typedef enum {
     SMACHE_FIXED = 0
-} smache_block_type;
+} smache_block_algorithm;
+
+typedef enum {
+    SMACHE_NONE = 0
+} smache_compression_type;
+
+/*
+ * Data definitions.
+ */
+
+typedef struct {
+    /* NOTE: This is always 16 bytes == 128 bits. */
+    unsigned char val[16];
+} smache_hash;
+
+typedef struct {
+    /*
+     * If this is a metahash, then the data is a list
+     * of hash objects and 32-bit offsets.
+     * Each hash has a constant, fixed size.
+     */
+    uint8_t  metahash         :1;
+    uint8_t  compression_type :3;
+    uint16_t references       :12;
+    uint16_t length           :16;
+    unsigned char data[0];
+} __attribute__((packed)) smache_chunk;
+
+typedef struct {
+    uint32_t    offset;
+    smache_hash hash;
+} smache_metahash;
+
+#define SMACHE_MAXIMUM_CHUNKSIZE  (0xffff)
+#define SMACHE_METAHASH_CHUNKSIZE (SMACHE_MAXIMUM_CHUNKSIZE)
+#define SMACHE_METAHASH_COUNT     (SMACHE_METAHASH_CHUNKSIZE >> 3)
 
 /*
  * Definitions for the backend, remote and smache instance.
  */
 
-typedef struct {
-    smache_error (*get)(smache_hash*, smache_metadata*, smache_data*);
-    smache_error (*put)(smache_hash*, smache_metadata*, smache_data*);
+typedef struct struct_smache_backend {
+    smache_error (*get)(struct struct_smache_backend*, smache_hash*, smache_chunk*);
+    smache_error (*put)(struct struct_smache_backend*, smache_hash*, smache_chunk*);
+    smache_error (*delete)(struct struct_smache_backend*, smache_hash*);
+    smache_error (*close)(struct struct_smache_backend*);
+    void* internals;
 } smache_backend;
 
 typedef struct {
-    int socket;
-} smache_remote;
-
-typedef struct {
-    smache_hash_type  hash_algorithm;
-    smache_block_type block_algorithm;
-
     struct smache_priv* internals;
 } smache;
 
@@ -72,7 +87,7 @@ typedef struct {
 
 smache_backend* smache_berkeleydb_backend(const char* filename);
 smache_backend* smache_memcached_backend(const char* spec);
-smache_remote*  smache_socket_remote(int socket);
+smache_backend* smache_remote_backend(int socket);
 
 /*
  * Constructor for a smache instance.
@@ -80,6 +95,23 @@ smache_remote*  smache_socket_remote(int socket);
 
 smache* smache_create();
 smache_error smache_add_backend(smache*, smache_backend*);
-smache_error smache_add_remote(smache*, smache_remote*);
+
+/*
+ * Operations for sending/receiving data.
+ */
+
+smache_error smache_lookup(smache*, char* path, smache_hash*);
+smache_error smache_addindex(smache*, char* path, smache_hash*);
+smache_error smache_delindex(smache*, char* path);
+
+smache_error smache_info(smache*, smache_hash*, size_t* length);
+smache_error smache_get(smache*, smache_hash*, size_t offset, void* data, size_t length);
+smache_error smache_put(smache*, smache_hash* rval, void* data, size_t length, smache_block_algorithm, smache_compression_type compression);
+smache_error smache_delete(smache*, smache_hash*);
+
+/*
+ * Option to start serving.
+ */
+smache_error smache_server(unsigned short port);
 
 #endif /* _SMACHE_H_ */

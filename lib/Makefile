@@ -2,10 +2,9 @@
 
 LIBRARY=libsmache.so
 OBJECTS=berkeleydb.o memcached.o protocol.o smache.o
-LDFLAGS:=-shared -fPIC
-CFLAGS:=-Wall -I../include
+CFLAGS:=-Wall -I../include -I/opt/local/include
+LIBTOOLFLAGS:=-lc -lmhash -L/opt/local/lib
 CC:=gcc
-LD:=gcc
 
 all: $(LIBRARY)
 
@@ -16,7 +15,7 @@ clean:
 	@rm -f $(OBJECTS) $(LIBRARY)
 
 $(LIBRARY): $(OBJECTS)
-	$(LD) $(LDFLAGS) -o $@ $^
+	libtool -o $@ -dynamic $(LIBTOOLFLAGS) $^
 
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $^

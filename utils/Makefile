@@ -1,12 +1,27 @@
 #!/usr/bin/make -f
 
-all:
-	@echo "Nothing to do."
+BINARIES=smachezip smache
+OBJECTS=smachezip.o smache.o server.o client.o
+CFLAGS:=-Wall -I../include
+LDFLAGS:=-lsmache -lc -L../lib
+CC:=gcc
+LD:=gcc
+
+all: $(BINARIES)
 
 install:
-	@echo "Nothing to do."
+	@echo "Not implemented."
 
 clean:
-	@echo "Nothing to do."
+	@rm -f $(OBJECTS) $(BINARIES)
+
+smachezip: smachezip.o
+	$(LD) -o $@ $(LDFLAGS) $^
+
+smache: smache.o server.o client.o
+	$(LD) -o $@ $(LDFLAGS) $^
+
+%.o: %.c
+	$(CC) $(CFLAGS) -o $@ -c $^
 
 .PHONY: all install clean
