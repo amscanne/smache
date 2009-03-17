@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 #include <smache/smache.h>
 
 struct backend_list {
@@ -33,6 +34,7 @@ smache_create()
     smache* instance = malloc(sizeof(smache));
     if( instance == NULL )
     {
+        fprintf(stderr, "malloc: %s\n", strerror(errno));
         return NULL;
     }
     memset(instance, 0, sizeof(*instance));
@@ -40,6 +42,7 @@ smache_create()
     instance->internals = malloc(sizeof(struct smache_priv));
     if( instance->internals == NULL )
     {
+        fprintf(stderr, "malloc: %s\n", strerror(errno));
         free(instance);
         return NULL;
     }
@@ -82,6 +85,7 @@ smache_add_backend(smache* instance, smache_backend* backend)
     backends->next = malloc(sizeof(struct backend_list));
     if( backends->next == NULL )
     {
+        fprintf(stderr, "malloc: %s\n", strerror(errno));
         backends->current = NULL;
         return SMACHE_ERROR;
     }
@@ -89,12 +93,6 @@ smache_add_backend(smache* instance, smache_backend* backend)
     backends->next->current = NULL;
     backends->next->next    = NULL;
 
-    return SMACHE_SUCCESS;
-}
-
-int
-smache_info(smache* instance, smache_hash* hash, size_t* length)
-{
     return SMACHE_SUCCESS;
 }
 
@@ -116,8 +114,9 @@ _smache_put(smache* instance, smache_hash* hash, smache_chunk* chunk)
 }
 
 static int
-_smache_get(smache* instance, smache_hash* hash, size_t offset, void* data, size_t* length)
+_smache_get(smache* instance, smache_hash* hash, size_t offset, void* data, size_t* length, size_t* totallength)
 {
+    int rval = SMACHE_SUCCESS;
     smache_chunk* chunk = smache_create_chunk();
     struct backend_list* backends = &(instance->internals->backends);
 
@@ -140,6 +139,7 @@ _smache_get(smache* instance, smache_hash* hash, size_t offset, void* data, size
             size_t uncompressed_length;
             if( smache_uncompress(chunk, &uncompressed, &uncompressed_length) != SMACHE_SUCCESS )
             {
+                fprintf(stderr, "smache_uncompress: %s\n", strerror(errno));
                 smache_delete_chunk(chunk);
                 return SMACHE_ERROR;
             }
@@ -152,23 +152,50 @@ _smache_get(smache* instance, smache_hash* hash, size_t offset, void* data, size
                 smache_metahash* metahash = uncompressed;
                 int count = uncompressed_length / sizeof(smache_metahash);
                 int index = 0;
-                for( index = 1; index < count; index++ )
+                for( index = 0; index < count; index++ )
                 {
+                    /*
+                     * Metahashes record the ending offset.
+                     */
                     if( metahash[index].offset > offset )
                     {
                         break;
                     }
                 }
 
+                /*
+                 * Save the length of the whole thing.
+                 */
+                if( totallength )
+                {
+                    *totallength = metahash[count-1].offset;
+                }
+
+                size_t lastend = 0;
+                if( index > 0 ) lastend = metahash[index-1].offset;
+
                 smache_hash newhash = metahash[index].hash;
-                size_t newoffset    = (offset - metahash[index].offset);
-                rval                = _smache_get(instance, &newhash, newoffset, data, length);
+                size_t newoffset    = (offset - lastend);
+
+                if( data )
+                {
+                    rval = _smache_get(instance, &newhash, newoffset, data, length, NULL);
+                }
             }
             else
             {
-                size_t minlength = *length < (uncompressed_length - offset) ? *length : (uncompressed_length - offset);
-                memcpy(data, uncompressed, minlength);
+                size_t availlength = uncompressed_length - offset;
+                size_t minlength = *length < availlength ? *length : availlength;
+
+                if( data )
+                {
+                    memcpy(data, uncompressed, minlength);
+                }
                 *length = minlength;
+                if( totallength )
+                {
+                    *totallength = uncompressed_length;
+                }
             }
 
             /*
@@ -176,7 +203,11 @@ _smache_get(smache* instance, smache_hash* hash, size_t offset, void* data, size
              */
             if( rval == SMACHE_SUCCESS )
             {
-                _smache_put(instance, hash, chunk);
+                rval = _smache_put(instance, hash, chunk);
+                if( rval != SMACHE_SUCCESS )
+                 {
+                    fprintf(stderr, "put: %s\n", strerror(errno));
+                }
             }
 
             /*
@@ -192,7 +223,7 @@ _smache_get(smache* instance, smache_hash* hash, size_t offset, void* data, size
     }
 
     smache_delete_chunk(chunk);
-    return SMACHE_SUCCESS;
+    return rval;
 }
 
 int
@@ -206,7 +237,7 @@ smache_get(smache* instance, smache_hash* hash, size_t offset, void* data, size_
     while( length > 0 && rval == SMACHE_SUCCESS )
     {
         size_t thislength = length;
-        rval = _smache_get(instance, hash, offset, data, &thislength);
+        rval = _smache_get(instance, hash, offset, data, &thislength, NULL);
         data = (void*)(((unsigned char*)data) + thislength);
         length -= thislength;
         offset += thislength;
@@ -215,40 +246,157 @@ smache_get(smache* instance, smache_hash* hash, size_t offset, void* data, size_
     return rval;
 }
 
-static int
-smache_put_fixed(smache* instance, smache_hash* rval, size_t offset, void* data, size_t length, smache_compression_type compression)
+int
+smache_info(smache* instance, smache_hash* hash, size_t* length)
 {
-    if( length > SMACHE_MAXIMUM_CHUNKSIZE )
-    {
-        /*
-         * We are making at least one metahash.
-         * Divide up into chunks of a fixed size.
-         */
-    }
-    else
-    {
-    }
-
-    int i = 0;
-    for( i = 0; i < 16; i++ )
-    {
-        rval->val[i] = i;
-    }
-
-    return SMACHE_ERROR;
+    size_t thislength = 0;
+    size_t totallength = 0;
+    int rval = _smache_get(instance, hash, 0, NULL, &thislength, &totallength);
+    *length = totallength;
+    return rval;
 }
 
-int
-smache_put(smache* instance, smache_hash* rval, size_t offset, void* data, size_t length, smache_block_algorithm block, smache_compression_type compression)
+struct chunklist
 {
+    void*  data;
+    size_t length;
+    struct chunklist* next;
+};
+
+static struct chunklist*
+smache_chunk_fixed(void* data, size_t length, size_t* count)
+{
+    struct chunklist first;
+    struct chunklist* rval = &first;
+    size_t current_offset = 0;
+
+    rval->next = NULL;
+
+    while( current_offset < length )
+    {
+        (*count)++;
+        rval->next = malloc(sizeof(struct chunklist));
+        rval = rval->next;
+        rval->data = (void*)(((unsigned char*)data) + current_offset);
+        rval->next = NULL;
+
+        if( length - current_offset < 512 )
+        {
+            rval->length = length - current_offset;
+        }
+        else
+        {
+            rval->length = 512;
+        }
+        current_offset += rval->length;
+    }
+
+    return first.next;
+}
+
+static int
+smache_put_flags(smache* instance, smache_hash* hash, void* data, size_t length,
+                 smache_block_algorithm block, smache_compression_type compression, int meta)
+{
+    int rval = SMACHE_SUCCESS;
+
+    /*
+     * Create a re-use a single chunk for all operations.
+     */
+    smache_chunk* chunk = smache_create_chunk();
+
+    /*
+     * Get the chunklist.
+     */
+    struct chunklist* chunks = NULL;
+    size_t count = 0;
     switch( block )
     {
         case SMACHE_FIXED:
-        return smache_put_fixed(instance, rval, offset, data, length, compression);
+        chunks = smache_chunk_fixed(data, length, &count);
+        break;
+
         default:
         fprintf(stderr, "put: Unknown block algorithm %d.\n", block);
         return SMACHE_ERROR;
     }
+
+    /*
+     * Allocate space for the metahashes.
+     * NOTE: We do everything here, then recursively shrink the metahashes.
+     */
+    smache_metahash* metahashes = malloc(count * sizeof(smache_metahash));
+    int hashno = 0;
+    size_t offset = 0;
+    for( hashno = 0; hashno < count; hashno++ )
+    {
+        /*
+         * Compute the data hash.
+         */
+        smache_computehash(hash, chunks->data, chunks->length);
+
+        /*
+         * Create the compressed block. (And mark it as a metahash).
+         */
+        smache_compress(chunk, chunks->data, chunks->length, compression);
+        chunk->metahash = meta;
+
+        /*
+         * Put the chunk into the database.
+         */
+        rval = _smache_put(instance, hash, chunk);
+        if( rval != SMACHE_SUCCESS )
+        {
+            fprintf(stderr, "put: %s\n", strerror(errno));
+        }
+
+        /*
+         * Cycle to the next one.
+         */
+        if( meta )
+        {
+            smache_metahash* underlyingmetahash = (smache_metahash*)(((unsigned char*)chunks->data) + chunks->length - sizeof(smache_metahash));
+            offset = underlyingmetahash->offset;
+        }
+        else
+        {
+            offset += chunks->length;
+        }
+
+        metahashes[hashno].offset = offset;
+        metahashes[hashno].hash   = *hash;
+
+        struct chunklist* prev = chunks;
+        chunks = chunks->next;
+        free(prev);
+    }
+
+    if( count > 1 )
+    {
+        /*
+         * Recursively compute the hash of the metahash.
+         */
+        rval |= smache_put_flags(instance, hash, metahashes, count * sizeof(smache_metahash), SMACHE_FIXED, compression, 1);
+    }
+    else
+    {
+        /*
+         * The one and only hash computed was appropriate, we just don't touch the hash variable.
+         */
+    }
+
+    /*
+     * Free the allocated metahashes.
+     */
+    free(metahashes);
+
+    return rval;
+}
+
+int
+smache_put(smache* instance, smache_hash* rval, void* data, size_t length, smache_block_algorithm block, smache_compression_type compression)
+{
+    return smache_put_flags(instance, rval, data, length, block, compression, 0);
 }
 
 int

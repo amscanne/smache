@@ -50,7 +50,7 @@ typedef struct {
      */
     uint8_t  metahash         :1;
     uint8_t  compression_type :3;
-    uint16_t references       :12;
+    uint16_t reserved         :12;
     uint16_t length           :16;
     unsigned char data[0];
 } __attribute__((packed)) smache_chunk;
@@ -65,6 +65,7 @@ typedef struct {
 
 #define SMACHE_MAXIMUM_CHUNKSIZE  (0xffff)
 #define SMACHE_METAHASH_COUNT(l)  (l >> 3)
+#define SMACHE_METAHASH_DEFAULT   0x80
 
 /*
  * Definitions for the backend, remote and smache instance.
@@ -108,7 +109,7 @@ void smache_delete_hashstr(char* hash);
  */
 
 int smache_uncompress(smache_chunk*, void** data, size_t* length);
-int smache_compress(smache_chunk*, void** data, size_t* length);
+int smache_compress(smache_chunk*, void* data, size_t length, smache_compression_type compression);
 int smache_release(smache_chunk*, void* data);
 
 /*
@@ -124,7 +125,7 @@ void smache_destroy(smache*);
  */
 int smache_info(smache*, smache_hash*, size_t* length);
 int smache_get(smache*, smache_hash*, size_t offset, void* data, size_t length);
-int smache_put(smache*, smache_hash* rval, size_t offset, void* data, size_t length, smache_block_algorithm, smache_compression_type compression);
+int smache_put(smache*, smache_hash* rval, void* data, size_t length, smache_block_algorithm, smache_compression_type compression);
 int smache_delete(smache*, smache_hash*);
 
 /*

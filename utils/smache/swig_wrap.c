@@ -2443,16 +2443,15 @@ SWIG_Python_MustGetPtr(PyObject *obj, swig_type_info *ty, int argnum, int flags)
 /* -------- TYPES TABLE (BEGIN) -------- */
 
 #define SWIGTYPE_p_char swig_types[0]
-#define SWIGTYPE_p_p_void swig_types[1]
-#define SWIGTYPE_p_size_t swig_types[2]
-#define SWIGTYPE_p_smache swig_types[3]
-#define SWIGTYPE_p_smache_backend swig_types[4]
-#define SWIGTYPE_p_smache_block_algorithm swig_types[5]
-#define SWIGTYPE_p_smache_chunk swig_types[6]
-#define SWIGTYPE_p_smache_compression_type swig_types[7]
-#define SWIGTYPE_p_smache_hash swig_types[8]
-static swig_type_info *swig_types[10];
-static swig_module_info swig_module = {swig_types, 9, 0, 0, 0, 0};
+#define SWIGTYPE_p_size_t swig_types[1]
+#define SWIGTYPE_p_smache swig_types[2]
+#define SWIGTYPE_p_smache_backend swig_types[3]
+#define SWIGTYPE_p_smache_block_algorithm swig_types[4]
+#define SWIGTYPE_p_smache_chunk swig_types[5]
+#define SWIGTYPE_p_smache_compression_type swig_types[6]
+#define SWIGTYPE_p_smache_hash swig_types[7]
+static swig_type_info *swig_types[9];
+static swig_module_info swig_module = {swig_types, 8, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -3170,115 +3169,6 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_smache_uncompress(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  smache_chunk *arg1 = (smache_chunk *) 0 ;
-  void **arg2 = (void **) 0 ;
-  size_t *arg3 = (size_t *) 0 ;
-  int result;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
-  void *argp3 = 0 ;
-  int res3 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  PyObject * obj2 = 0 ;
-  
-  if(!PyArg_UnpackTuple(args,(char *)"smache_uncompress",3,3,&obj0,&obj1,&obj2)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_smache_chunk, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "smache_uncompress" "', argument " "1"" of type '" "smache_chunk *""'"); 
-  }
-  arg1 = (smache_chunk *)(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_p_void, 0 |  0 );
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "smache_uncompress" "', argument " "2"" of type '" "void **""'"); 
-  }
-  arg2 = (void **)(argp2);
-  res3 = SWIG_ConvertPtr(obj2, &argp3,SWIGTYPE_p_size_t, 0 |  0 );
-  if (!SWIG_IsOK(res3)) {
-    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "smache_uncompress" "', argument " "3"" of type '" "size_t *""'"); 
-  }
-  arg3 = (size_t *)(argp3);
-  result = (int)smache_uncompress(arg1,arg2,arg3);
-  resultobj = SWIG_From_int((int)(result));
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_smache_compress(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  smache_chunk *arg1 = (smache_chunk *) 0 ;
-  void **arg2 = (void **) 0 ;
-  size_t *arg3 = (size_t *) 0 ;
-  int result;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
-  void *argp3 = 0 ;
-  int res3 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  PyObject * obj2 = 0 ;
-  
-  if(!PyArg_UnpackTuple(args,(char *)"smache_compress",3,3,&obj0,&obj1,&obj2)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_smache_chunk, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "smache_compress" "', argument " "1"" of type '" "smache_chunk *""'"); 
-  }
-  arg1 = (smache_chunk *)(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_p_void, 0 |  0 );
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "smache_compress" "', argument " "2"" of type '" "void **""'"); 
-  }
-  arg2 = (void **)(argp2);
-  res3 = SWIG_ConvertPtr(obj2, &argp3,SWIGTYPE_p_size_t, 0 |  0 );
-  if (!SWIG_IsOK(res3)) {
-    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "smache_compress" "', argument " "3"" of type '" "size_t *""'"); 
-  }
-  arg3 = (size_t *)(argp3);
-  result = (int)smache_compress(arg1,arg2,arg3);
-  resultobj = SWIG_From_int((int)(result));
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_smache_release(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  smache_chunk *arg1 = (smache_chunk *) 0 ;
-  void *arg2 = (void *) 0 ;
-  int result;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  int res2 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  
-  if(!PyArg_UnpackTuple(args,(char *)"smache_release",2,2,&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_smache_chunk, 0 |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "smache_release" "', argument " "1"" of type '" "smache_chunk *""'"); 
-  }
-  arg1 = (smache_chunk *)(argp1);
-  res2 = SWIG_ConvertPtr(obj1,SWIG_as_voidptrptr(&arg2), 0, 0);
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "smache_release" "', argument " "2"" of type '" "void *""'"); 
-  }
-  result = (int)smache_release(arg1,arg2);
-  resultobj = SWIG_From_int((int)(result));
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
 SWIGINTERN PyObject *_wrap_smache_create(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   smache *result = 0 ;
@@ -3444,34 +3334,30 @@ SWIGINTERN PyObject *_wrap_smache_put(PyObject *SWIGUNUSEDPARM(self), PyObject *
   PyObject *resultobj = 0;
   smache *arg1 = (smache *) 0 ;
   smache_hash *arg2 = (smache_hash *) 0 ;
-  size_t arg3 ;
-  void *arg4 = (void *) 0 ;
-  size_t arg5 ;
-  smache_block_algorithm arg6 ;
-  smache_compression_type arg7 ;
+  void *arg3 = (void *) 0 ;
+  size_t arg4 ;
+  smache_block_algorithm arg5 ;
+  smache_compression_type arg6 ;
   int result;
   void *argp1 = 0 ;
   int res1 = 0 ;
   void *argp2 = 0 ;
   int res2 = 0 ;
-  size_t val3 ;
-  int ecode3 = 0 ;
-  int res4 ;
-  size_t val5 ;
+  int res3 ;
+  size_t val4 ;
+  int ecode4 = 0 ;
+  int val5 ;
   int ecode5 = 0 ;
   int val6 ;
   int ecode6 = 0 ;
-  int val7 ;
-  int ecode7 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   PyObject * obj2 = 0 ;
   PyObject * obj3 = 0 ;
   PyObject * obj4 = 0 ;
   PyObject * obj5 = 0 ;
-  PyObject * obj6 = 0 ;
   
-  if(!PyArg_UnpackTuple(args,(char *)"smache_put",7,7,&obj0,&obj1,&obj2,&obj3,&obj4,&obj5,&obj6)) SWIG_fail;
+  if(!PyArg_UnpackTuple(args,(char *)"smache_put",6,6,&obj0,&obj1,&obj2,&obj3,&obj4,&obj5)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_smache, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "smache_put" "', argument " "1"" of type '" "smache *""'"); 
@@ -3482,31 +3368,26 @@ SWIGINTERN PyObject *_wrap_smache_put(PyObject *SWIGUNUSEDPARM(self), PyObject *
     SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "smache_put" "', argument " "2"" of type '" "smache_hash *""'"); 
   }
   arg2 = (smache_hash *)(argp2);
-  ecode3 = SWIG_AsVal_size_t(obj2, &val3);
-  if (!SWIG_IsOK(ecode3)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "smache_put" "', argument " "3"" of type '" "size_t""'");
-  } 
-  arg3 = (size_t)(val3);
-  res4 = SWIG_ConvertPtr(obj3,SWIG_as_voidptrptr(&arg4), 0, 0);
-  if (!SWIG_IsOK(res4)) {
-    SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "smache_put" "', argument " "4"" of type '" "void *""'"); 
+  res3 = SWIG_ConvertPtr(obj2,SWIG_as_voidptrptr(&arg3), 0, 0);
+  if (!SWIG_IsOK(res3)) {
+    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "smache_put" "', argument " "3"" of type '" "void *""'"); 
   }
-  ecode5 = SWIG_AsVal_size_t(obj4, &val5);
-  if (!SWIG_IsOK(ecode5)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode5), "in method '" "smache_put" "', argument " "5"" of type '" "size_t""'");
+  ecode4 = SWIG_AsVal_size_t(obj3, &val4);
+  if (!SWIG_IsOK(ecode4)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "smache_put" "', argument " "4"" of type '" "size_t""'");
   } 
-  arg5 = (size_t)(val5);
+  arg4 = (size_t)(val4);
+  ecode5 = SWIG_AsVal_int(obj4, &val5);
+  if (!SWIG_IsOK(ecode5)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode5), "in method '" "smache_put" "', argument " "5"" of type '" "smache_block_algorithm""'");
+  } 
+  arg5 = (smache_block_algorithm)(val5);
   ecode6 = SWIG_AsVal_int(obj5, &val6);
   if (!SWIG_IsOK(ecode6)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode6), "in method '" "smache_put" "', argument " "6"" of type '" "smache_block_algorithm""'");
+    SWIG_exception_fail(SWIG_ArgError(ecode6), "in method '" "smache_put" "', argument " "6"" of type '" "smache_compression_type""'");
   } 
-  arg6 = (smache_block_algorithm)(val6);
-  ecode7 = SWIG_AsVal_int(obj6, &val7);
-  if (!SWIG_IsOK(ecode7)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode7), "in method '" "smache_put" "', argument " "7"" of type '" "smache_compression_type""'");
-  } 
-  arg7 = (smache_compression_type)(val7);
-  result = (int)smache_put(arg1,arg2,arg3,arg4,arg5,arg6,arg7);
+  arg6 = (smache_compression_type)(val6);
+  result = (int)smache_put(arg1,arg2,arg3,arg4,arg5,arg6);
   resultobj = SWIG_From_int((int)(result));
   return resultobj;
 fail:
@@ -3581,9 +3462,6 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"smache_delete_chunk", _wrap_smache_delete_chunk, METH_VARARGS, NULL},
 	 { (char *)"smache_create_hash", _wrap_smache_create_hash, METH_VARARGS, NULL},
 	 { (char *)"smache_delete_hash", _wrap_smache_delete_hash, METH_VARARGS, NULL},
-	 { (char *)"smache_uncompress", _wrap_smache_uncompress, METH_VARARGS, NULL},
-	 { (char *)"smache_compress", _wrap_smache_compress, METH_VARARGS, NULL},
-	 { (char *)"smache_release", _wrap_smache_release, METH_VARARGS, NULL},
 	 { (char *)"smache_create", _wrap_smache_create, METH_VARARGS, NULL},
 	 { (char *)"smache_add_backend", _wrap_smache_add_backend, METH_VARARGS, NULL},
 	 { (char *)"smache_destroy", _wrap_smache_destroy, METH_VARARGS, NULL},
@@ -3599,7 +3477,6 @@ static PyMethodDef SwigMethods[] = {
 /* -------- TYPE CONVERSION AND EQUIVALENCE RULES (BEGIN) -------- */
 
 static swig_type_info _swigt__p_char = {"_p_char", "char *", 0, 0, (void*)0, 0};
-static swig_type_info _swigt__p_p_void = {"_p_p_void", "void **", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_size_t = {"_p_size_t", "size_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_smache = {"_p_smache", "smache *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_smache_backend = {"_p_smache_backend", "smache_backend *", 0, 0, (void*)0, 0};
@@ -3610,7 +3487,6 @@ static swig_type_info _swigt__p_smache_hash = {"_p_smache_hash", "smache_hash *"
 
 static swig_type_info *swig_type_initial[] = {
   &_swigt__p_char,
-  &_swigt__p_p_void,
   &_swigt__p_size_t,
   &_swigt__p_smache,
   &_swigt__p_smache_backend,
@@ -3621,7 +3497,6 @@ static swig_type_info *swig_type_initial[] = {
 };
 
 static swig_cast_info _swigc__p_char[] = {  {&_swigt__p_char, 0, 0, 0},{0, 0, 0, 0}};
-static swig_cast_info _swigc__p_p_void[] = {  {&_swigt__p_p_void, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_size_t[] = {  {&_swigt__p_size_t, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_smache[] = {  {&_swigt__p_smache, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_smache_backend[] = {  {&_swigt__p_smache_backend, 0, 0, 0},{0, 0, 0, 0}};
@@ -3632,7 +3507,6 @@ static swig_cast_info _swigc__p_smache_hash[] = {  {&_swigt__p_smache_hash, 0, 0
 
 static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_char,
-  _swigc__p_p_void,
   _swigc__p_size_t,
   _swigc__p_smache,
   _swigc__p_smache_backend,

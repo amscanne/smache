@@ -3,6 +3,7 @@
 import smache
 import sys
 import os
+import stat
 
 def loadindex(filename):
     #
@@ -13,10 +14,11 @@ def loadindex(filename):
         f = open(filename + ".index", "r")
         for l in f.readlines():
             try:
-                (hash, filename) = l.split(' ', 1)
+                (hash, perms, filename) = l.split(' ', 2)
             except:
                 continue
-            index[filename] = hash
+            filename = filename.rstrip()
+            index[filename] = (hash, int(perms))
         f.close()
     except:
         pass
@@ -28,8 +30,8 @@ def saveindex(filename, index):
     #
     f = open(filename + ".index", "w")
     for k in index.keys():
-        hash = index[k]
-        f.write("%s %s\n" % (hash, k))
+        (hash, perms) = index[k]
+        f.write("%s %d %s\n" % (hash, perms, k))
         f.flush()
     f.close()
 
@@ -37,9 +39,10 @@ def extract(sm, index, files):
     for file in files:
         (dirname, filename) = os.path.split(file)
         if dirname and not(os.path.exists(dirname)):
-            os.makedirs(dirname)
-        hash = index[file]
+            os.makedirs(dirname, mode=0777)
+        (hash, perms) = index[file]
         sm.getfile(hash, file)
+        os.chmod(file, perms)
 
 def add(sm, index, files):
     for file in files:
@@ -48,7 +51,9 @@ def add(sm, index, files):
                 add(sm, index, map(lambda x: os.path.join(root, x), files))
         else:
             hash = sm.addfile(file)
-            index[file] = hash
+            statinfo = os.stat(file)
+            perms = statinfo[stat.ST_MODE]
+            index[file] = (hash, perms)
 
 def usage(args):
     print "usage: %s <x|a> <database> [files....]" % (args[0])

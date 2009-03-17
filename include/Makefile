@@ -3,7 +3,7 @@
 all:
 
 install:
-	@echo "Not implemented."
+	install -m 0644 -o 0 -g 0 smache/smache.h /usr/local/include/smache
 
 clean:
 

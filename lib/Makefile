@@ -9,7 +9,7 @@ CC:=gcc
 all: $(LIBRARY)
 
 install:
-	@echo "Not implemented."
+	install -m 0755 -o 0 -g 0 $(LIBRARY) /usr/local/lib
 
 clean:
 	@rm -f $(OBJECTS) $(LIBRARY)

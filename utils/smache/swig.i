@@ -29,17 +29,13 @@ void smache_delete_chunk(smache_chunk*);
 smache_hash* smache_create_hash(void);
 void smache_delete_hash(smache_hash*);
 
-int smache_uncompress(smache_chunk*, void** data, size_t* length);
-int smache_compress(smache_chunk*, void** data, size_t* length);
-int smache_release(smache_chunk*, void* data);
-
 smache* smache_create();
 int smache_add_backend(smache*, smache_backend*);
 void smache_destroy(smache*);
 
 int smache_info(smache*, smache_hash*, size_t* length);
 int smache_get(smache*, smache_hash*, size_t offset, void* data, size_t length);
-int smache_put(smache*, smache_hash* rval, size_t offset, void* data, size_t length, smache_block_algorithm, smache_compression_type compression);
+int smache_put(smache*, smache_hash* rval, void* data, size_t length, smache_block_algorithm, smache_compression_type compression);
 int smache_delete(smache*, smache_hash*);
 
 int smache_server(unsigned short port);

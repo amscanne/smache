@@ -25,54 +25,75 @@
 static int
 bdb_get(smache_backend* backend, smache_hash* hash, smache_chunk* data)
 {
-    DB* dbp = (DB*)(backend->internals);
+    DB* dbp = *((DB**)(backend->internals));
     DBT key;
     DBT val;
 
+    memset(&key, 0, sizeof(key));
+    memset(&val, 0, sizeof(val));
+
     key.data = hash;
     key.size = sizeof(*hash);
+    key.ulen = sizeof(*hash);
 
     val.data = data;
-    val.size = sizeof(*data) + data->length;
+    val.size = SMACHE_MAXIMUM_CHUNKSIZE;
+    val.ulen = SMACHE_MAXIMUM_CHUNKSIZE;
+    val.flags = DB_DBT_USERMEM;
 
-    if( DBGET(dbp, key, val) )
+    int rval = DBGET(dbp, key, val);
+    if( rval ) 
     {
+        fprintf(stderr, "bdb_get: %s (%d)\n", strerror(errno), rval);
         return SMACHE_ERROR;
     }
+
     return SMACHE_SUCCESS;
 }
 
 static int
 bdb_put(smache_backend* backend, smache_hash* hash, smache_chunk* data)
 {
-    DB* dbp = (DB*)(backend->internals);
+    DB* dbp = *((DB**)(backend->internals));
     DBT key;
     DBT val;
+
+    memset(&key, 0, sizeof(key));
+    memset(&val, 0, sizeof(val));
 
     key.data = hash;
     key.size = sizeof(*hash);
 
     val.data = data;
     val.size = sizeof(*data) + data->length;
-   
-    if( DBPUT(dbp, key, val) )
+    val.ulen = SMACHE_MAXIMUM_CHUNKSIZE;
+    val.flags = DB_DBT_USERMEM;
+
+    int rval = DBPUT(dbp, key, val);
+    if( rval )
     {
+        fprintf(stderr, "bdb_put: %s (%d)\n", strerror(errno), rval);
         return SMACHE_ERROR;
     }
+
     return SMACHE_SUCCESS;
 }
 
 static int
 bdb_delete(smache_backend* backend, smache_hash* hash)
 {
-    DB* dbp = (DB*)(backend->internals);
+    DB* dbp = *((DB**)(backend->internals));
     DBT key;
+
+    memset(&key, 0, sizeof(key));
 
     key.data = hash;
     key.size = sizeof(*hash);
 
-    if( DBDEL(dbp, key) )
+    int rval = DBDEL(dbp, key);
+    if( rval )
     {
+        fprintf(stderr, "bdb_delete: %s (%d)\n", strerror(errno), rval);
         return SMACHE_ERROR;
     }
     return SMACHE_SUCCESS;
@@ -81,13 +102,18 @@ bdb_delete(smache_backend* backend, smache_hash* hash)
 static int
 bdb_close(smache_backend* backend)
 {
-    DB* dbp = (DB*)(backend->internals);
+    DB* dbp = *((DB**)(backend->internals));
 
-    if( DBCLOSE(dbp) != 0 )
+    int rval = DBCLOSE(dbp);
+    if( rval )
     {
+        fprintf(stderr, "bdb_close: %s (%d)\n", strerror(errno), rval);
+        free(backend->internals);
         free(backend);
         return SMACHE_ERROR;
     }
+
+    free(backend->internals);
     free(backend);
     return SMACHE_SUCCESS;
 }
@@ -97,30 +123,37 @@ smache_backend* smache_berkeleydb_backend(const char* filename)
     smache_backend* res = malloc(sizeof(smache_backend));
     if( res == NULL )
     {
+        fprintf(stderr, "malloc: %s\n", strerror(errno));
         return NULL;
     }
 
     DB* dbp = NULL;
-    if( db_create(&dbp, NULL, 0) != 0 )
+    int rval = db_create(&dbp, NULL, 0);
+    if( rval )
     {
-        fprintf(stderr, "dbopen: %s\n", strerror(errno));
+        fprintf(stderr, "dbopen: %s (%d)\n", strerror(errno), rval);
         free(res);
         return NULL;
     }
     
-    if( dbp->open(dbp, NULL, filename, "smache", DB_BTREE, DB_CREATE, 0644) )
+    rval = dbp->open(dbp, NULL, filename, NULL, DB_BTREE, DB_CREATE, 0644);
+    if( rval ) 
     {
-        fprintf(stderr, "dbopen: %s\n", strerror(errno));
+        fprintf(stderr, "dbopen: %s (%d)\n", strerror(errno), rval);
         DBCLOSE(dbp);
         free(res);
         return NULL;
     }
 
-    res->internals = (void*)dbp;
+    dbp->set_errfile(dbp, stderr);
+    res->internals = malloc(sizeof(DB**));
+    *((DB**)(res->internals)) = dbp;
+
     res->get       = &bdb_get;
     res->put       = &bdb_put;
     res->delete    = &bdb_delete;
     res->close     = &bdb_close;
+    res->push      = 1;
 
     return res;
 }
