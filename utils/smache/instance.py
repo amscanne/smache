@@ -1,6 +1,14 @@
 #!/usr/bin/env python
 
+import sys
 import native
+
+#
+# The Smache class.
+#
+# Currently, it only supports retrieving files and putting files.  Backends are
+# added and tweaked exclusively through their respectively backend classes.
+#
 
 class Smache:
     def __init__(self):
@@ -14,7 +22,7 @@ class Smache:
         native.smache_parsehash(nativehash, hash)
         native.smache_getfile(self.sm, nativehash, filename)
         native.smache_delete_hash(nativehash)
-        print "extracted %s -> %s" % (hash, filename)
+        sys.stderr.write("extracted %s -> %s\n" % (hash, filename))
 
     def addfile(self, filename):
         nativehash = native.smache_create_hash()
@@ -22,5 +30,5 @@ class Smache:
         hash = native.smache_create_hashstr(nativehash)
         hashcopy = hash[:]
         native.smache_delete_hashstr(hash)
-        print "added %s <- %s" % (hashcopy, filename)
+        sys.stderr.write("added %s <- %s\n" % (hashcopy, filename))
         return hashcopy

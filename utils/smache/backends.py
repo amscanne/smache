@@ -2,6 +2,10 @@
 
 import native
 
+#
+# The only backend currently supported is BerkeleyDB.
+#
+
 class BerkeleyDB:
     def __init__(self, smache, filename):
         self.bdb = native.smache_berkeleydb_backend(filename)

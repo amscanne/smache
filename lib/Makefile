@@ -15,7 +15,6 @@ clean:
 	@rm -f $(OBJECTS) $(LIBRARY)
 
 $(LIBRARY): $(OBJECTS)
-	# libtool -o $@ -dynamic $(LIBTOOLFLAGS) $^
 	$(CC) -o $@ -shared $(LIBTOOLFLAGS) $^
 
 %.o: %.c
