@@ -1,0 +1,10 @@
+#!/usr/bin/python
+
+import smache
+
+if __name__ == "__main__":
+    fs = smache.FS()
+    fs.flags = 0
+    fs.multithreaded = 0
+    fs.mountpoint = '/smache'
+    fs.main()

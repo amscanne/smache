@@ -69,7 +69,9 @@ def main(args):
     # Create a smache instance.
     #
     sm = smache.Smache()
+    # sm.debug(True)
     backend = smache.BerkeleyDB(sm, args[2])
+    # backend.debug(True)
     index = loadindex(args[2])
 
     #

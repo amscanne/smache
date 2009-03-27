@@ -17,6 +17,9 @@ class Smache:
     def __del__(self):
         native.smache_destroy(self.sm)
 
+    def debug(self, state):
+        native.smache_setdebug(self.sm, int(state))
+
     def getfile(self, hash, filename):
         nativehash = native.smache_create_hash()
         native.smache_parsehash(nativehash, hash)

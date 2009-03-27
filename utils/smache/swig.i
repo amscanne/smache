@@ -4,6 +4,10 @@
 #include "../../include/smache/smache.h"
 %}
 
+void smache_backend_setdebug(smache_backend* backend, int dbg);
+void smache_backend_setpush(smache_backend* backend, int push);
+void smache_setdebug(smache* instance, int dbg);
+
 typedef enum {
     SMACHE_FIXED = 0
 } smache_block_algorithm;
@@ -37,5 +41,3 @@ int smache_info(smache*, smache_hash*, size_t* length);
 int smache_get(smache*, smache_hash*, size_t offset, void* data, size_t length);
 int smache_put(smache*, smache_hash* rval, void* data, size_t length, smache_block_algorithm, smache_compression_type compression);
 int smache_delete(smache*, smache_hash*);
-
-int smache_server(unsigned short port);
