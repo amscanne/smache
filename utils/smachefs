@@ -1,10 +1,19 @@
 #!/usr/bin/python
 
 import smache
+import sys
 
 if __name__ == "__main__":
-    fs = smache.FS()
-    fs.flags = 0
+    if len(sys.argv) != 3:
+        print "usage: %s <smache.config> <mountpoint>" % sys.argv[0]
+        sys.exit(1)
+    
+    spec  = smache.Config(sys.argv[1])
+    store = smache.FileStore(spec)
+    fs    = smache.FS(store)
+
+    fs.flags         = 0
     fs.multithreaded = 0
-    fs.mountpoint = '/smache'
+    fs.mountpoint    = sys.argv[2]
+
     fs.main()

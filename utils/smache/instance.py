@@ -12,7 +12,7 @@ import native
 
 class Smache:
     def __init__(self):
-        self.sm = native.smache_create()
+        self.sm     = native.smache_create()
 
     def __del__(self):
         native.smache_destroy(self.sm)

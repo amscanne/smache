@@ -98,16 +98,28 @@ char*
 smache_create_hashstr(smache_hash* hash)
 {
     char* rval = malloc(sizeof(char) * 33);
-    int i = 0;
+    smache_write_hashstr(hash, rval);
+    return rval;
+}
 
+int smache_write_hashstr(smache_hash* hash, char* rval)
+{
+    int i = 0;
     for( i = 0; i < 16; i++ )
     {
         rval[2*i]     = inttochar((hash->val[i] >> 4) & 0xf);
         rval[2*i + 1] = inttochar( hash->val[i]       & 0xf);
     }
-
     rval[32] = '\0';
-    return rval;
+    return 33;
+}
+
+char tmphashstr[33];
+char*
+smache_temp_hashstr(smache_hash* hash)
+{
+    smache_write_hashstr(hash, tmphashstr);
+    return tmphashstr;
 }
 
 void

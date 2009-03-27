@@ -1,0 +1,8 @@
+[global]
+index = /tmp/smache.index
+debug = 0
+
+[filebackend]
+type = berkeleydb
+debug = 0
+filename = /tmp/smache.backend

@@ -23,6 +23,38 @@
 #endif
 
 static int
+bdb_exists(smache_backend* backend, smache_hash* hash)
+{
+    DB* dbp = *((DB**)(backend->internals));
+    DBT key;
+    DBT val;
+
+    memset(&key, 0, sizeof(key));
+
+    key.data = hash;
+    key.size = sizeof(*hash);
+    key.ulen = sizeof(*hash);
+
+    val.data = NULL;
+    val.size = 0;
+    val.ulen = 0;
+    val.flags = DB_DBT_USERMEM;
+
+    int rval = DBGET(dbp, key, val);
+    if( rval == DB_BUFFER_SMALL )
+    {
+        /*
+         * Found, but not returnable.
+         */
+        return SMACHE_SUCCESS;
+    }
+    else
+    {
+        return SMACHE_ERROR;
+    }
+}
+
+static int
 bdb_get(smache_backend* backend, smache_hash* hash, smache_chunk* data)
 {
     DB* dbp = *((DB**)(backend->internals));
@@ -149,6 +181,7 @@ smache_backend* smache_berkeleydb_backend(const char* filename)
     res->internals = malloc(sizeof(DB**));
     *((DB**)(res->internals)) = dbp;
 
+    res->exists    = &bdb_exists;
     res->get       = &bdb_get;
     res->put       = &bdb_put;
     res->delete    = &bdb_delete;

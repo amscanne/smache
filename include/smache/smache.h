@@ -73,8 +73,10 @@ typedef struct {
 
 typedef struct struct_smache_backend {
     uint8_t  push     :1;
-    uint32_t reserved :31;
+    uint8_t  debug    :1;
+    uint32_t reserved :30;
 
+    int (*exists)(struct struct_smache_backend*, smache_hash*);
     int (*get)(struct struct_smache_backend*, smache_hash*, smache_chunk*);
     int (*put)(struct struct_smache_backend*, smache_hash*, smache_chunk*);
     int (*delete)(struct struct_smache_backend*, smache_hash*);
@@ -84,9 +86,24 @@ typedef struct struct_smache_backend {
 
 } __attribute__((packed)) smache_backend;
 
+static void inline smache_backend_setpush(smache_backend* backend, int push)
+{ backend->push  = push; }
+static void inline smache_backend_setdebug(smache_backend* backend, int dbg)
+{ backend->debug = dbg; }
+
 typedef struct {
+    uint8_t  debug    :1;
+    uint32_t reserved :31;
+
     struct smache_priv* internals;
-} smache;
+} __attribute__((packed)) smache;
+
+static void inline smache_setdebug(smache* instance, int dbg)
+{ instance->debug = dbg; }
+
+#define stringify2(x) #x
+#define stringify(x) stringify2(x)
+#define SMACHE_DEBUG(x,s,a...) if( x->debug ) { fprintf(stderr, __FILE__ "." stringify(__LINE__) ": " s,  ## a); }
 
 /*
  * Constructors for backends and remotes.
@@ -102,6 +119,8 @@ smache_backend* smache_remote_backend(int socket);
 int smache_computehash(smache_hash*, const void* data, size_t length);
 int smache_parsehash(smache_hash*, const char*);
 char* smache_create_hashstr(smache_hash*);
+char* smache_temp_hashstr(smache_hash*);
+int smache_write_hashstr(smache_hash*, char*);
 void smache_delete_hashstr(char* hash);
 
 /*
