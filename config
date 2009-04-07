@@ -1,6 +1,6 @@
 [global]
 index = /tmp/smache.index
-debug = 0
+debug = 1
 
 [filebackend]
 type = berkeleydb

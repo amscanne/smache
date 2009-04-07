@@ -76,7 +76,7 @@ bdb_get(smache_backend* backend, smache_hash* hash, smache_chunk* data)
     int rval = DBGET(dbp, key, val);
     if( rval ) 
     {
-        fprintf(stderr, "bdb_get: %s (%d)\n", strerror(errno), rval);
+        fprintf(stderr, "bdb_get: %s (%d)\n", smache_temp_hashstr(hash), rval);
         return SMACHE_ERROR;
     }
 
@@ -99,12 +99,12 @@ bdb_put(smache_backend* backend, smache_hash* hash, smache_chunk* data)
     val.data = data;
     val.size = sizeof(*data) + data->length;
     val.ulen = SMACHE_MAXIMUM_CHUNKSIZE;
-    val.flags = DB_DBT_USERMEM;
+    val.flags = 0;
 
     int rval = DBPUT(dbp, key, val);
     if( rval )
     {
-        fprintf(stderr, "bdb_put: %s (%d)\n", strerror(errno), rval);
+        fprintf(stderr, "bdb_put: %s (%d)\n", smache_temp_hashstr(hash), rval);
         return SMACHE_ERROR;
     }
 
@@ -125,7 +125,7 @@ bdb_delete(smache_backend* backend, smache_hash* hash)
     int rval = DBDEL(dbp, key);
     if( rval )
     {
-        fprintf(stderr, "bdb_delete: %s (%d)\n", strerror(errno), rval);
+        fprintf(stderr, "bdb_delete: %s (%d)\n", smache_temp_hashstr(hash), rval);
         return SMACHE_ERROR;
     }
     return SMACHE_SUCCESS;
@@ -139,7 +139,7 @@ bdb_close(smache_backend* backend)
     int rval = DBCLOSE(dbp);
     if( rval )
     {
-        fprintf(stderr, "bdb_close: %s (%d)\n", strerror(errno), rval);
+        fprintf(stderr, "bdb_close: (%d)\n", rval);
         free(backend->internals);
         free(backend);
         return SMACHE_ERROR;
@@ -163,7 +163,7 @@ smache_backend* smache_berkeleydb_backend(const char* filename)
     int rval = db_create(&dbp, NULL, 0);
     if( rval )
     {
-        fprintf(stderr, "dbopen: %s (%d)\n", strerror(errno), rval);
+        fprintf(stderr, "dbopen: (%d)\n", rval);
         free(res);
         return NULL;
     }
@@ -171,7 +171,7 @@ smache_backend* smache_berkeleydb_backend(const char* filename)
     rval = dbp->open(dbp, NULL, filename, NULL, DB_BTREE, DB_CREATE, 0644);
     if( rval ) 
     {
-        fprintf(stderr, "dbopen: %s (%d)\n", strerror(errno), rval);
+        fprintf(stderr, "dbopen: (%d)\n", rval);
         DBCLOSE(dbp);
         free(res);
         return NULL;

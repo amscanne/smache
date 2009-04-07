@@ -103,7 +103,8 @@ static void inline smache_setdebug(smache* instance, int dbg)
 
 #define stringify2(x) #x
 #define stringify(x) stringify2(x)
-#define SMACHE_DEBUG(x,s,a...) if( x->debug ) { fprintf(stderr, __FILE__ "." stringify(__LINE__) ": " s,  ## a); }
+#define SMACHE_DEBUG(x,s,a...)    if( x->debug ) { fprintf(stderr, __FILE__ "." stringify(__LINE__) ": " s,  ## a); }
+#define SMACHE_DEBUG_NL(x,s,a...) if( x->debug ) { fprintf(stderr, s,  ## a); }
 
 /*
  * Constructors for backends and remotes.

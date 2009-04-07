@@ -32,6 +32,9 @@ class Smache:
         native.smache_putfile(self.sm, nativehash, filename, native.SMACHE_FIXED, native.SMACHE_NONE)
         hash = native.smache_create_hashstr(nativehash)
         hashcopy = hash[:]
-        native.smache_delete_hashstr(hash)
+        native.smache_delete_hash(nativehash)
+        # NOTE: There is a known leak here.  Appears to cause
+        # Python to crash.  Exact cause as of yet unknown.
+        # -> native.smache_delete_hashstr(hash)
         sys.stderr.write("added %s <- %s\n" % (hashcopy, filename))
         return hashcopy
