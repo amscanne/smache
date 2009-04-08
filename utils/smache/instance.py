@@ -20,6 +20,9 @@ class Smache:
     def debug(self, state):
         native.smache_setdebug(self.sm, int(state))
 
+    def progress(self, state):
+        native.smache_setprogress(self.sm, int(state))
+
     def getfile(self, hash, filename):
         nativehash = native.smache_create_hash()
         native.smache_parsehash(nativehash, hash)

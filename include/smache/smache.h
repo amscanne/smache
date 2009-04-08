@@ -96,13 +96,16 @@ static void inline smache_backend_setdebug(smache_backend* backend, int dbg)
 
 typedef struct {
     uint8_t  debug    :1;
-    uint32_t reserved :31;
+    uint8_t  progress :1;
+    uint32_t reserved :30;
 
     struct smache_priv* internals;
 } __attribute__((packed)) smache;
 
 static void inline smache_setdebug(smache* instance, int dbg)
 { instance->debug = dbg; }
+static void inline smache_setprogress(smache* instance, int onoff)
+{ instance->progress = onoff; }
 
 #define stringify2(x) #x
 #define stringify(x) stringify2(x)

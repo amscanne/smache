@@ -399,8 +399,7 @@ smache_put_flags(smache* instance, smache_hash* hash, void* data, size_t length,
         if( (int)newperc > (int)perc || hashno % 10000 == 0 )
         {
             perc = newperc;
-            ARROWS();
-            SMACHE_DEBUG(instance, "%3.2f%% finished.\r", newperc);
+            if( instance->progress ) fprintf(stderr, "%3.2f%% finished.\r", newperc);
         }
 
         /*
@@ -450,8 +449,7 @@ smache_put_flags(smache* instance, smache_hash* hash, void* data, size_t length,
         free(prev);
     }
 
-    ARROWS();
-    SMACHE_DEBUG(instance, "100.00%% finished.\n");
+    if( instance->progress ) fprintf(stderr, "100.00%% finished.\n");
 
     if( count > 1 )
     {

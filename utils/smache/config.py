@@ -9,6 +9,10 @@ class ConfigAppliedException:
     def __str__(self):
         return "Configuration applied twice."
 
+class ConfigException:
+    def __str__(self):
+        return "Configuration error, check syntax."
+
 class Config:
     def __init__(self, filename=None):
         self.filename = filename
@@ -35,11 +39,15 @@ class Config:
         cp = ConfigParser.ConfigParser()
         cp.read(self.filename)
 
+        globalfound = False
+
         for s in cp.sections():
             # NOTE: Special section is "global".
             if s == "global":
-                self.debug = cp.getint(s, "debug")
-                self.index = files.Index(cp.get(s, "index"))
+                globalfound   = True
+                self.debug    = cp.getint(s, "debug")
+                self.progress = cp.getint(s, "progress")
+                self.index    = files.Index(cp.get(s, "index"))
 
             # All other sections are for backends.
             else:
@@ -49,10 +57,14 @@ class Config:
                 del options["type"]
                 self.backends.append((s, btype, options))
 
+        if not(globalfound):
+            raise ConfigException()
+
     def dump(self):
         print "[global]"
         print "	index=%s" % str(self.index)
         print "	debug=%s" % str(self.debug)
+        print "	progress=%s" % str(self.progress)
         for (name, btype, options) in self.backends:
             print "[%s]" % name
             print "	type=%s" % str(btype).split(".")[-1]
@@ -68,6 +80,7 @@ class Config:
         # Create an instance.
         self.instance = instance.Smache()
         self.instance.debug(self.debug)
+        self.instance.progress(self.debug)
 
         # Create all the necessary backends.
         for (name, btype, options) in self.backends:

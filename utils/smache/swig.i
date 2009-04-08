@@ -7,6 +7,7 @@
 void smache_backend_setdebug(smache_backend* backend, int dbg);
 void smache_backend_setpush(smache_backend* backend, int push);
 void smache_setdebug(smache* instance, int dbg);
+void smache_setprogress(smache* instance, int onoff);
 
 typedef enum {
     SMACHE_FIXED = 0
