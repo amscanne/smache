@@ -80,7 +80,7 @@ class Config:
         # Create an instance.
         self.instance = instance.Smache()
         self.instance.debug(self.debug)
-        self.instance.progress(self.debug)
+        self.instance.progress(self.progress)
 
         # Create all the necessary backends.
         for (name, btype, options) in self.backends:
