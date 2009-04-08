@@ -326,13 +326,13 @@ smache_chunk_fixed(void* data, size_t length, size_t* count)
         rval->data = (void*)(((unsigned char*)data) + current_offset);
         rval->next = NULL;
 
-        if( length - current_offset < 1024 )
+        if( length - current_offset < 512 )
         {
             rval->length = length - current_offset;
         }
         else
         {
-            rval->length = 1024;
+            rval->length = 512;
         }
         current_offset += rval->length;
     }

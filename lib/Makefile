@@ -9,7 +9,7 @@ CC:=gcc
 all: $(LIBRARY)
 
 install:
-	install -m 0755 -o 0 -g 0 $(LIBRARY) /usr/local/lib
+	install -m 0755 -o 0 -g 0 $(LIBRARY) /usr/lib
 
 clean:
 	@rm -f $(OBJECTS) $(LIBRARY)
