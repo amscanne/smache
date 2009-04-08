@@ -45,7 +45,7 @@ void smache_delete_hash(smache_hash*);
 typedef struct {
     /*
      * If this is a metahash, then the data is a list
-     * of hash objects and 32-bit offsets.
+     * of hash objects and 64-bit offsets.
      * Each hash has a constant, fixed size.
      */
     uint8_t  metahash         :1;
@@ -60,6 +60,9 @@ void smache_delete_chunk(smache_chunk*);
 
 typedef struct {
     uint32_t    offset;
+    uint32_t    padding1;
+    uint32_t    padding2;
+    uint32_t    padding3;
     smache_hash hash;
 } smache_metahash;
 

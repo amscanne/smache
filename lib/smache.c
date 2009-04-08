@@ -111,8 +111,7 @@ _smache_put(smache* instance, smache_hash* hash, smache_chunk* chunk)
 {
     struct backend_list* backends = &(instance->internals->backends);
 
-    SMACHE_DEBUG(instance, "Putting chunk of length %d with key %s.\n", chunk->length, smache_temp_hashstr(hash));
-    if( chunk->metahash ) { SMACHE_DEBUG(instance, "Chunk is a metahash.\n"); } 
+    SMACHE_DEBUG(instance, "Putting chunk%s of length %d with key %s.\n", chunk->metahash ? "*" : "", chunk->length, smache_temp_hashstr(hash));
 
     while( backends->current != NULL )
     {
@@ -130,14 +129,17 @@ _smache_put(smache* instance, smache_hash* hash, smache_chunk* chunk)
 #define ARROWS() { int ai = 0; for(ai = 0; ai < depth; ai++) SMACHE_DEBUG_NL(instance, "-"); SMACHE_DEBUG_NL(instance, "-> "); }
 
 static int
-smache_get_flags(smache* instance, smache_hash* hash, size_t offset, void* data, size_t* length, size_t* totallength, int depth)
+smache_get_flags(smache* instance, smache_hash* hash,
+    size_t meta_offset, size_t first_meta_offset, size_t local_offset,
+    void* data, size_t* length, size_t* totallength, int depth)
 {
     int rval = SMACHE_SUCCESS;
     smache_chunk* chunk = smache_create_chunk();
     struct backend_list* backends = &(instance->internals->backends);
+    size_t offset = meta_offset + local_offset;
 
     ARROWS();
-    SMACHE_DEBUG(instance, "Fetching piece of hash %s (offset %ld).\n", smache_temp_hashstr(hash), (long)offset);
+    SMACHE_DEBUG(instance, "Fetching piece of hash %s (offset %ld).\n", smache_temp_hashstr(hash), (long)meta_offset);
 
     /*
      * Loop through all the backends.
@@ -184,7 +186,9 @@ smache_get_flags(smache* instance, smache_hash* hash, size_t offset, void* data,
                     /*
                      * Metahashes record the ending offset.
                      */
-                    if( metahash[index].offset <= offset && (index == count-1 || metahash[index+1].offset > offset) )
+                    ARROWS();
+                    SMACHE_DEBUG(instance, "Metahash %d ends at %ld (need %ld).\n", index, (long)metahash[index].offset, (long)meta_offset);
+                    if( metahash[index].offset > meta_offset && (index == 0 || metahash[index-1].offset <= meta_offset) )
                     {
                         break;
                     }
@@ -198,20 +202,21 @@ smache_get_flags(smache* instance, smache_hash* hash, size_t offset, void* data,
                     *totallength = metahash[count-1].offset;
                 }
 
-                size_t lastend      = (index > 0 ? metahash[index-1].offset : 0);
+                size_t lastend      = (index > 0 ? metahash[index-1].offset : first_meta_offset);
                 smache_hash newhash = metahash[index].hash;
-                size_t newoffset    = (offset - lastend);
+                size_t newoffset    = (meta_offset - lastend);
 
                 if( data )
                 {
+                    /* NOTE: We don't actually *use* the newoffset though. */
                     ARROWS();
-                    SMACHE_DEBUG(instance, "Fetching from hash index %d (offset %ld).\n", index, (long)newoffset);
-                    rval = smache_get_flags(instance, &newhash, newoffset, data, length, NULL, depth+1);
+                    SMACHE_DEBUG(instance, "Fetching from hash index %d (offset %ld).\n", index, (long)offset);
+                    rval = smache_get_flags(instance, &newhash, meta_offset, lastend, newoffset, data, length, NULL, depth+1);
                 }
             }
             else
             {
-                size_t availlength = uncompressed_length - offset;
+                size_t availlength = uncompressed_length - local_offset;
                 size_t minlength = *length < availlength ? *length : availlength;
 
                 ARROWS();
@@ -221,7 +226,7 @@ smache_get_flags(smache* instance, smache_hash* hash, size_t offset, void* data,
 
                 if( data )
                 {
-                    memcpy(data, uncompressed, minlength);
+                    memcpy(data, uncompressed + local_offset, minlength);
                 }
                 *length = minlength;
                 if( totallength )
@@ -277,7 +282,7 @@ smache_get(smache* instance, smache_hash* hash, size_t offset, void* data, size_
     {
         SMACHE_DEBUG(instance, "Getting offset %ld, length %ld of key %s.\n", (long)offset, (long)length, smache_temp_hashstr(hash));
         size_t thislength = length;
-        rval = smache_get_flags(instance, hash, offset, data, &thislength, NULL, 0);
+        rval = smache_get_flags(instance, hash, offset, 0, 0, data, &thislength, NULL, 0);
         SMACHE_DEBUG(instance, "Received data of length %ld.\n", (long)thislength);
         data = (void*)(((unsigned char*)data) + thislength);
         length -= thislength;
@@ -292,7 +297,7 @@ smache_info(smache* instance, smache_hash* hash, size_t* length)
 {
     size_t thislength = 0;
     size_t totallength = 0;
-    int rval = smache_get_flags(instance, hash, 0, NULL, &thislength, &totallength, 0);
+    int rval = smache_get_flags(instance, hash, 0, 0, 0, NULL, &thislength, &totallength, 0);
     *length = totallength;
     return rval;
 }
@@ -354,21 +359,29 @@ smache_put_flags(smache* instance, smache_hash* hash, void* data, size_t length,
     SMACHE_DEBUG(instance, "Creating chunklist for data of length %ld.\n", (long)length);
     struct chunklist* chunks = NULL;
     size_t count = 0;
-    switch( block )
+    if( depth == 0 )
     {
-        case SMACHE_FIXED:
+        switch( block )
+        {
+            case SMACHE_FIXED:
+            ARROWS();
+            SMACHE_DEBUG(instance, "Using fixed algorithm.\n");
+            chunks = smache_chunk_fixed(data, length, &count);
+            break;
+
+            default:
+            fprintf(stderr, "put: Unknown block algorithm %d.\n", block);
+            return SMACHE_ERROR;
+        }
+    }
+    else
+    {
         ARROWS();
         SMACHE_DEBUG(instance, "Using fixed algorithm.\n");
         chunks = smache_chunk_fixed(data, length, &count);
-        break;
-
-        default:
-        fprintf(stderr, "put: Unknown block algorithm %d.\n", block);
-        return SMACHE_ERROR;
     }
     ARROWS();
     SMACHE_DEBUG(instance, "Created %ld chunks.\n", (long)count);
-
 
     /*
      * Allocate space for the metahashes.
@@ -419,7 +432,7 @@ smache_put_flags(smache* instance, smache_hash* hash, void* data, size_t length,
         /*
          * Cycle to the next one.
          */
-        if( depth )
+        if( depth > 0 )
         {
             smache_metahash* underlyingmetahash = (smache_metahash*)(((unsigned char*)chunks->data) + chunks->length - sizeof(smache_metahash));
             offset = underlyingmetahash->offset;
