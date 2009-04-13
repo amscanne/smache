@@ -115,7 +115,9 @@ _smache_put(smache* instance, smache_hash* hash, smache_chunk* chunk)
 
     while( backends->current != NULL )
     {
-        if( backends->current->push && backends->current->exists(backends->current, hash) )
+        if( backends->current->push && 
+            (backends->current->exists == NULL ||
+             backends->current->exists(backends->current, hash)) )
         {
             SMACHE_DEBUG(instance, "Found backend without key.\n");
             backends->current->put(backends->current, hash, chunk);
@@ -491,4 +493,9 @@ smache_delete(smache* instance, smache_hash* hash)
     }
 
     return SMACHE_SUCCESS;
+}
+
+int main(int argc, char** argv)
+{
+    return 0;
 }

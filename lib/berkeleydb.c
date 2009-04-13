@@ -12,7 +12,7 @@
 
 #ifdef __APPLE__
 #define DBGET(x, key, val) x->get(x, &key, &val, 0)
-#define DBPUT(x, key, val) x->put(x, &key, &val, 0)
+#define DBPUT(x, key, val) x->put(x, &key, &val, R_SETCURSOR)
 #define DBDEL(x, key)      x->del(x, &key, 0)
 #define DBCLOSE(x)         x->close(x)
 #else
@@ -33,15 +33,24 @@ bdb_exists(smache_backend* backend, smache_hash* hash)
 
     key.data = hash;
     key.size = sizeof(*hash);
+#ifndef __APPLE__
     key.ulen = sizeof(*hash);
+    key.flags = 0;
+#endif
 
     val.data = NULL;
     val.size = 0;
+#ifndef __APPLE__
     val.ulen = 0;
     val.flags = DB_DBT_USERMEM;
+#endif
 
     int rval = DBGET(dbp, key, val);
+#ifdef __APPLE__
+    if( rval >= 0 )
+#else
     if( rval == DB_BUFFER_SMALL )
+#endif
     {
         /*
          * Found, but not returnable.
@@ -66,17 +75,26 @@ bdb_get(smache_backend* backend, smache_hash* hash, smache_chunk* data)
 
     key.data = hash;
     key.size = sizeof(*hash);
+#ifndef __APPLE__
     key.ulen = sizeof(*hash);
+    key.flags = 0;
+#endif
 
     val.data = data;
     val.size = SMACHE_MAXIMUM_CHUNKSIZE;
+#ifndef __APPLE__
     val.ulen = SMACHE_MAXIMUM_CHUNKSIZE;
     val.flags = DB_DBT_USERMEM;
+#endif
 
     int rval = DBGET(dbp, key, val);
     if( rval ) 
     {
+#ifdef __APPLE__
+        fprintf(stderr, "bdb_get: %s (%d)\n", strerror(errno), errno);
+#else
         fprintf(stderr, "bdb_get: %s (%d)\n", smache_temp_hashstr(hash), rval);
+#endif
         return SMACHE_ERROR;
     }
 
@@ -95,16 +113,26 @@ bdb_put(smache_backend* backend, smache_hash* hash, smache_chunk* data)
 
     key.data = hash;
     key.size = sizeof(*hash);
+#ifndef __APPLE__
+    key.ulen = sizeof(*hash);
+    key.flags = 0;
+#endif
 
     val.data = data;
     val.size = sizeof(*data) + data->length;
+#ifndef __APPLE__
     val.ulen = SMACHE_MAXIMUM_CHUNKSIZE;
     val.flags = 0;
+#endif
 
     int rval = DBPUT(dbp, key, val);
     if( rval )
     {
+#ifdef __APPLE__
+        fprintf(stderr, "bdb_put: %s (%d)\n", strerror(errno), errno);
+#else
         fprintf(stderr, "bdb_put: %s (%d)\n", smache_temp_hashstr(hash), rval);
+#endif
         return SMACHE_ERROR;
     }
 
@@ -121,11 +149,19 @@ bdb_delete(smache_backend* backend, smache_hash* hash)
 
     key.data = hash;
     key.size = sizeof(*hash);
+#ifndef __APPLE__
+    key.ulen = sizeof(*hash);
+    key.flags = 0;
+#endif
 
     int rval = DBDEL(dbp, key);
     if( rval )
     {
+#ifdef __APPLE__
+        fprintf(stderr, "bdb_delete: %s (%d)\n", strerror(errno), errno);
+#else
         fprintf(stderr, "bdb_delete: %s (%d)\n", smache_temp_hashstr(hash), rval);
+#endif
         return SMACHE_ERROR;
     }
     return SMACHE_SUCCESS;
@@ -139,7 +175,11 @@ bdb_close(smache_backend* backend)
     int rval = DBCLOSE(dbp);
     if( rval )
     {
+#ifdef __APPLE__
+        fprintf(stderr, "bdb_close: %s (%d)\n", strerror(errno), errno);
+#else
         fprintf(stderr, "bdb_close: (%d)\n", rval);
+#endif
         free(backend->internals);
         free(backend);
         return SMACHE_ERROR;
@@ -159,6 +199,15 @@ smache_backend* smache_berkeleydb_backend(const char* filename)
         return NULL;
     }
 
+#ifdef __APPLE__
+    DB* dbp = dbopen(filename, O_CREAT, 0644, DB_BTREE, NULL);
+    if( dbp == NULL )
+    {
+        fprintf(stderr, "dbopen: unknown error.\n");
+        free(res);
+        return NULL;
+    }
+#else
     DB* dbp = NULL;
     int rval = db_create(&dbp, NULL, 0);
     if( rval )
@@ -178,10 +227,16 @@ smache_backend* smache_berkeleydb_backend(const char* filename)
     }
 
     dbp->set_errfile(dbp, stderr);
+#endif
+
     res->internals = malloc(sizeof(DB**));
     *((DB**)(res->internals)) = dbp;
 
+#ifdef __APPLE__
+    res->exists    = NULL;
+#else
     res->exists    = &bdb_exists;
+#endif
     res->get       = &bdb_get;
     res->put       = &bdb_put;
     res->delete    = &bdb_delete;
