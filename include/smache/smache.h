@@ -35,7 +35,8 @@ typedef enum {
  */
 
 typedef struct {
-    /* NOTE: This is always 16 bytes == 128 bits. */
+    /* NOTE: This is always 16 bytes == 128 bits.  */
+    /* We only support one kind of hash currently. */
     unsigned char val[16];
 } smache_hash;
 
@@ -50,25 +51,21 @@ typedef struct {
      */
     uint8_t  metahash         :1;
     uint8_t  compression_type :3;
-    uint16_t reserved         :12;
+    uint16_t references       :12;
     uint16_t length           :16;
     unsigned char data[0];
 } __attribute__((packed)) smache_chunk;
 
 smache_chunk* smache_create_chunk(void);
 void smache_delete_chunk(smache_chunk*);
+/* The largest possible chunk (data size) */
+#define SMACHE_MAXIMUM_CHUNKSIZE  (0xffff)
 
 typedef struct {
-    uint32_t    offset;
-    uint32_t    padding1;
-    uint32_t    padding2;
-    uint32_t    padding3;
+    uint64_t offset;
+    uint64_t reserved;
     smache_hash hash;
 } smache_metahash;
-
-#define SMACHE_MAXIMUM_CHUNKSIZE  (0xffff)
-#define SMACHE_METAHASH_COUNT(l)  (l >> 3)
-#define SMACHE_METAHASH_DEFAULT   0x80
 
 /*
  * Definitions for the backend, remote and smache instance.
@@ -130,6 +127,15 @@ char* smache_temp_hashstr(smache_hash*);
 int smache_write_hashstr(smache_hash*, char*);
 void smache_delete_hashstr(char* hash);
 
+struct chunklist
+{
+    void*  data;
+    size_t length;
+    struct chunklist* next;
+};
+struct chunklist* smache_chunk_fixed(void* data, size_t length, size_t* count, size_t block_length);
+struct chunklist* smache_chunk_rabin(void* data, size_t length, size_t* count, size_t block_length);
+
 /*
  * Compression helpers.
  */
@@ -149,9 +155,9 @@ void smache_destroy(smache*);
 /*
  * Operations for sending/receiving data.
  */
-int smache_info(smache*, smache_hash*, size_t* length);
-int smache_get(smache*, smache_hash*, size_t offset, void* data, size_t length);
-int smache_put(smache*, smache_hash* rval, void* data, size_t length, smache_block_algorithm, smache_compression_type compression);
+int smache_info(smache*, smache_hash*, uint64_t* length);
+int smache_get(smache*, smache_hash*, uint64_t offset, void* data, uint64_t length);
+int smache_put(smache*, smache_hash* rval, void* data, uint64_t length, smache_block_algorithm algorithm, size_t block_size, smache_compression_type compression);
 int smache_delete(smache*, smache_hash*);
 
 /*

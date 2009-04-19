@@ -1,5 +1,5 @@
 /*
- * smache.c
+ * hash.c
  */
 
 #include <stdlib.h>
