@@ -1,88 +1,75 @@
 #!/usr/bin/env python
 
+import sys
 import files
+import native
 import backends
 import instance
 import ConfigParser
 
-class ConfigAppliedException:
-    def __str__(self):
-        return "Configuration applied twice."
+#
+# The different types of block and compression algorithms possible.
+#
+block_algos = {
+    "fixed":native.SMACHE_FIXED,
+    "rabin":native.SMACHE_RABIN,
+}
 
-class ConfigException:
-    def __str__(self):
-        return "Configuration error, check syntax."
+compression_algos = {
+    "none":native.SMACHE_NONE,
+    "lzo":native.SMACHE_LZO
+}
 
+#
+# Keyword mappers.  When you see a special value, these are used to
+# convert the given value to a different one.
+#
+keyword_mappers = {
+    "block":lambda x: block_algos[x],
+    "compression":lambda x: compression_algos[x]
+}
+
+#
+# The actual config parser.
+#
 class Config:
     def __init__(self, filename=None):
         self.filename = filename
 
-        # Set the defaults.
-        self.index    = None
-        self.debug    = False
+        #
+        # Store options for the main instance and backends.
+        #
+        self.smache   = {}
         self.backends = []
-        self.instance = None
-        self.applied  = False
 
+        #
         # Load the configuration.
+        #
         if self.filename:
-            self.load()
+            self.load(self.filename)
       
-        # Dump the configuration (if debug is on).
-        if self.debug:
-            self.dump()
-
-        # Apply the configuration.
-        self.apply()
-
-    def load(self):
+    def load(self, filename):
+        #
+        # Parse the file.
+        #
         cp = ConfigParser.ConfigParser()
-        cp.read(self.filename)
+        cp.read(filename)
 
         globalfound = False
 
         for s in cp.sections():
-            # NOTE: Special section is "global".
-            if s == "global":
-                globalfound   = True
-                self.debug    = cp.getint(s, "debug")
-                self.progress = cp.getint(s, "progress")
-                self.index    = files.Index(cp.get(s, "index"))
+            options = dict()
+            options.update(map(lambda (k, v): (k, keyword_mappers.has_key(k) and keyword_mappers[k](v) or v), cp.items(s)))
+
+            # NOTE: Special section is "smache".
+            if s == "smache":
+                self.smache = options
 
             # All other sections are for backends.
             else:
-                btype = backends.getclass(cp.get(s, "type"))
-                options = dict()
-                options.update(cp.items(s))
-                del options["type"]
-                self.backends.append((s, btype, options))
+                if not(backends.getclass(s)):
+                    sys.stderr.write("error: Unknown backend type '%s'.  Require one of: %s\n" % \
+                                     (s, ", ".join(backends.getallclassses())))
 
-        if not(globalfound):
-            raise ConfigException()
-
-    def dump(self):
-        print "[global]"
-        print "	index=%s" % str(self.index)
-        print "	debug=%s" % str(self.debug)
-        print "	progress=%s" % str(self.progress)
-        for (name, btype, options) in self.backends:
-            print "[%s]" % name
-            print "	type=%s" % str(btype).split(".")[-1]
-            for (k,v) in options.items():
-                print "	%s=%s" % (k,v)
-
-    def apply(self):
-        # Don't allow two apply statements.
-        if self.applied:
-            raise ConfigAppliedException()
-        self.applied = True
-
-        # Create an instance.
-        self.instance = instance.Smache()
-        self.instance.debug(self.debug)
-        self.instance.progress(self.progress)
-
-        # Create all the necessary backends.
-        for (name, btype, options) in self.backends:
-            backend = btype(self.instance, options)
-            backend.debug(options.get("debug", False))
+                btype = backends.getclass(s)
+                self.backends.append((btype, options))

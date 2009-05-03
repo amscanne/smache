@@ -29,6 +29,9 @@ smache_chunk_fixed(void* data, size_t length, size_t* count, size_t block_length
 
     rval->next = NULL;
 
+    block_length = block_length < PATH_LARGE ? block_length : PATH_LARGE;
+    block_length = block_length > PATH_SMALL ? block_length : PATH_SMALL;
+
     while( current_offset < length )
     {
         (*count)++;
@@ -37,13 +40,13 @@ smache_chunk_fixed(void* data, size_t length, size_t* count, size_t block_length
         rval->data = (void*)(((unsigned char*)data) + current_offset);
         rval->next = NULL;
 
-        if( length - current_offset < block_length )
+        if( (length - current_offset) < block_length )
         {
             rval->length = length - current_offset;
         }
         else
         {
-            rval->length = length;
+            rval->length = block_length;
         }
         current_offset += rval->length;
     }
@@ -66,14 +69,15 @@ smache_chunk_rabin(void* data, size_t length, size_t* count, size_t block_length
      * since we have a fixed, short window size.
      */
     long long power = 1;
-    for (int i = 0; i < WINDOW_SIZE; i++)
+    int i = 0;
+    for (i = 0; i < WINDOW_SIZE; i++)
     {
         power = (power * PRIME_BASE) % PRIME_MOD;
     }
 
     int lasti = 0;
     long long hash;
-    for (int i = 0; i < length; i++)
+    for (i = 0; i < length; i++)
     {
         /*
          * Add the next character to the window.
@@ -85,7 +89,7 @@ smache_chunk_rabin(void* data, size_t length, size_t* count, size_t block_length
          */
         if ( i > length )
         {
-            hash -= (power * haystack[i-length] % PRIME_MOD);
+            hash -= (power * ((char*)data)[i-length] % PRIME_MOD);
             if( hash < 0 ) hash += PRIME_MOD;
         }
 

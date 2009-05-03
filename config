@@ -1,9 +1,10 @@
-[global]
+[smache]
 index = /tmp/smache.index
 debug = 1
 progress = 1
+block = rabin
+compression = lzo
 
-[filebackend]
-type = berkeleydb
+[berkeleydb]
 debug = 1
 filename = /tmp/smache.backend

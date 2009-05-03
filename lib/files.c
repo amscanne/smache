@@ -14,7 +14,11 @@
 #include <fcntl.h>
 #include <smache/smache.h>
 
-int smache_putfile(smache* sm, smache_hash* hash, const char* filename, smache_block_algorithm block, smache_compression_type compression)
+/*
+ * Putfile is a simple helper function that takes an instance and filename,
+ * and inserts the contents of the file into the cache.
+ */
+int smache_putfile(smache* sm, smache_hash* hash, const char* filename, size_t block_length)
 {
     int filedes = open(filename, O_CREAT|O_RDONLY);
     if( filedes < 0 )
@@ -22,6 +26,8 @@ int smache_putfile(smache* sm, smache_hash* hash, const char* filename, smache_b
         fprintf(stderr, "open: %s (%d)\n", strerror(errno), errno);
         return SMACHE_ERROR;
     }
+
+    SMACHE_DEBUG(sm, "Opened file %s.\n", filename);
 
     /*
      * Stat the file.
@@ -34,6 +40,8 @@ int smache_putfile(smache* sm, smache_hash* hash, const char* filename, smache_b
         return SMACHE_ERROR;
     }
 
+    SMACHE_DEBUG(sm, "Found length %ld.\n", (long)statbuf.st_size);
+
     /*
      * Map the file.
      */
@@ -45,7 +53,10 @@ int smache_putfile(smache* sm, smache_hash* hash, const char* filename, smache_b
         close(filedes);
         return SMACHE_ERROR;
     }
-    if( smache_put(sm, hash, map_region, length, block, compression) != SMACHE_SUCCESS )
+    SMACHE_DEBUG(sm, "Mapped file.\n");
+
+    SMACHE_DEBUG(sm, "Using block length of %ld.\n", (long)block_length);
+    if( smache_put(sm, hash, map_region, length, block_length) != SMACHE_SUCCESS )
     {
         munmap(map_region, length);
         close(filedes);
@@ -61,14 +72,18 @@ int smache_putfile(smache* sm, smache_hash* hash, const char* filename, smache_b
     return SMACHE_SUCCESS;
 }
 
-
+/*
+ * Getfile is a simple helper function that takes an instance and a hash,
+ * and outputs the contents of the hash to the filename.
+ */
 int smache_getfile(smache* sm, smache_hash* hash, const char* filename)
 {
     /*
      * Given the correct hash, stat the file.
      */
     size_t length;
-    if( smache_info(sm, hash, &length) != SMACHE_SUCCESS )
+    size_t references;
+    if( smache_info(sm, hash, &length, &references) != SMACHE_SUCCESS )
     {
         fprintf(stderr, "error: unable to stat %s.\n", filename);
         return SMACHE_ERROR;

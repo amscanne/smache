@@ -8,6 +8,12 @@
 #include <mhash.h>
 #include <smache/smache.h>
 
+void
+__attribute__((constructor))
+smache_hash_init()
+{
+}
+
 int
 smache_computehash(smache_hash* hash, const void* data, size_t length)
 {
@@ -125,5 +131,5 @@ smache_temp_hashstr(smache_hash* hash)
 void
 smache_delete_hashstr(char* hash)
 {
-    free(hash);
+    // free(hash);
 }

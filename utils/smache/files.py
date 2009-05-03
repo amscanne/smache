@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 
+import sys
 import instance
 import os
 import stat
 
-class NoIndexException:
-    def __str__(self):
-        return "No index defined in configuration file."
+#
+# This class defines a simple index of files.
+#
+# This index is stored as a simple list, as follows:
+# <hash> <permissions> <file path>
+#
 
 class Index:
     def __init__(self, filename):
@@ -60,28 +64,36 @@ class Index:
             for root, dirs, files in os.walk(file):
                 self.add(sm, map(lambda x: os.path.join(root, x), files))
         else:
-            hash = sm.addfile(file)
+            hash     = sm.addfile(file)
             statinfo = os.stat(file)
-            perms = statinfo[stat.ST_MODE]
+            perms    = statinfo[stat.ST_MODE]
             self.index[file] = (hash, perms)
 
     def __str__(self):
         return self.filename
 
+#
+# A FileStore is a special class of Smache instance.
+# It basically allows for adding and removing of files
+# from the index (using the instance as the storage).
+#
 class FileStore:
     def __init__(self, config):
-        self.config = config
-        if not(self.config.index):
-            raise NoIndexException()
+        if not(config.smache.has_key("index")):
+            sys.stderr.write("error: No index defined in the configuration file.\n")
+            sys.exit(1)
+
+        self.index    = Index(config.smache["index"])
+        self.instance = instance.Smache(config)
 
     def list(self):
-        return self.config.index.list()
+        return self.index.list()
 
     def save(self):
-        return self.config.index.save()
+        return self.index.save()
 
     def add(self, files):
-        return self.config.index.add(self.config.instance, files)
+        return self.index.add(self.instance, files)
 
     def extract(self, files):
-        return self.config.index.extract(self.config.instance, files)
+        return self.index.extract(self.instance, files)

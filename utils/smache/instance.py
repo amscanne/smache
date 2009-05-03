@@ -11,17 +11,39 @@ import native
 #
 
 class Smache:
-    def __init__(self):
-        self.sm     = native.smache_create()
+    def __init__(self, config):
+        self.sm = native.smache_create()
+
+        # Set the debug appropriately.
+        self.setdebug(config.smache.get("debug", False))
+        self.setprogress(config.smache.get("progress", False))
+        self.setblock(config.smache.get("block", False))
+        self.setcompression(config.smache.get("compression", False))
+
+        # Create all the necessary backends.
+        for (btype, options) in config.backends:
+            backend = btype(self.sm, options)
 
     def __del__(self):
         native.smache_destroy(self.sm)
 
-    def debug(self, state):
+    #
+    # Options.
+    #
+    def setdebug(self, state):
         native.smache_setdebug(self.sm, int(state))
+    def setprogress(self, progress):
+        native.smache_setprogress(self.sm, int(progress))
+    def setblock(self, block):
+        native.smache_setblockalgorithm(self.sm, int(block))
+    def setcompression(self, compression):
+        native.smache_setcompressiontype(self.sm, int(compression))
 
-    def progress(self, state):
-        native.smache_setprogress(self.sm, int(state))
+    #
+    # Utility functions.  In python, we currently only support
+    # getting/putting complete files.  This may change eventually,
+    # but for now it keeps the semantics very simple.
+    #
 
     def getfile(self, hash, filename):
         nativehash = native.smache_create_hash()
@@ -32,7 +54,7 @@ class Smache:
 
     def addfile(self, filename):
         nativehash = native.smache_create_hash()
-        native.smache_putfile(self.sm, nativehash, filename, native.SMACHE_FIXED, native.SMACHE_NONE)
+        native.smache_putfile(self.sm, nativehash, filename, 512)
         hash = native.smache_create_hashstr(nativehash)
         hashcopy = hash[:]
         native.smache_delete_hash(nativehash)
