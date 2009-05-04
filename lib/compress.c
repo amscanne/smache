@@ -52,7 +52,6 @@ smache_uncompress(smache_chunk* chunk, void** data, size_t* length)
          * Decompress to the scratch data chunk.
          * NOTE: This will set the length automatically.
          */
-        fprintf(stderr, "Uncompressing chunk of length %d from %p to %p.\n", chunk->length, chunk->data, lzo_data_chunk);
         *length = SMACHE_MAXIMUM_CHUNKSIZE*2;
         lzo1f_decompress( chunk->data, chunk->length, lzo_data_chunk, length, lzo_working_mem);
         *data = lzo_data_chunk;
