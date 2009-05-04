@@ -25,7 +25,8 @@ cat >/tmp/sanity.conf <<EOF
 [smache]
 index = /tmp/sanity.index
 compression = lzo
-block = rabin
+blockalgo = rabin
+blocksize = 128
 debug = 1
 
 [berkeleydb]
@@ -46,7 +47,7 @@ CUR=`pwd`
 cd utils/build/lib.linux-x86_64-2.5
 DIR=`pwd`
 
-if "x$DEBUG" == "x"; then
+if [ "x$DEBUG" == "x" ]; then
     ($DIR/../scripts-2.5/smachezip a /tmp/sanity.conf . 2> $CUR/compress.stderr) &
     PID=$!
     (sleep 5; kill $PID 2>/dev/null) &
@@ -68,7 +69,7 @@ done
 mkdir -p /tmp/sanity-check
 cd /tmp/sanity-check
 
-if "x$DEBUG" == "x"; then
+if [ "x$DEBUG" == "x" ]; then
     ($DIR/../scripts-2.5/smachezip x /tmp/sanity.conf 2> $CUR/uncompress.stderr) &
     PID=$!
     (sleep 5; kill $PID 2>/dev/null) &

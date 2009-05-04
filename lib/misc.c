@@ -54,3 +54,24 @@ void smache_hash_null_check(smache_hash* instance)
 {
     fprintf(stderr, "Check -> Pointer is %p.\n", instance);
 }
+
+unsigned int smache_info_length(smache* instance, smache_hash* hash)
+{
+    uint64_t length = SMACHE_MAXIMUM_CHUNKSIZE;
+    smache_info(instance, hash, &length, NULL, NULL);
+    return (unsigned int)length;
+}
+
+unsigned int smache_info_totallength(smache* instance, smache_hash* hash) 
+{
+    uint64_t totallength = SMACHE_MAXIMUM_CHUNKSIZE;
+    smache_info(instance, hash, NULL, &totallength, NULL);
+    return (unsigned int)totallength;
+}
+
+unsigned int smache_info_references(smache* instance, smache_hash* hash)
+{
+    size_t references = 0;
+    smache_info(instance, hash, NULL, NULL, &references);
+    return (unsigned int)references;
+}

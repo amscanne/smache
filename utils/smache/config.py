@@ -25,7 +25,7 @@ compression_algos = {
 # convert the given value to a different one.
 #
 keyword_mappers = {
-    "block":lambda x: block_algos[x],
+    "blockalgo":lambda x: block_algos[x],
     "compression":lambda x: compression_algos[x]
 }
 

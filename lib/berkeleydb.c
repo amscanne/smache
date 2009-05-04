@@ -171,21 +171,20 @@ smache_backend* smache_berkeleydb_backend(const char* filename)
     int rval = db_create(&dbp, NULL, 0);
     if( rval )
     {
-        fprintf(stderr, "dbopen: (%d)\n", rval);
+        fprintf(stderr, "dbopen: %s (%d)\n", strerror(rval), rval);
         free(res);
         return NULL;
     }
     
+    dbp->set_errfile(dbp, stderr);
     rval = dbp->open(dbp, NULL, filename, NULL, DB_BTREE, DB_CREATE, 0644);
     if( rval ) 
     {
-        fprintf(stderr, "dbopen: (%d)\n", rval);
+        fprintf(stderr, "dbopen: %s (%d)\n", strerror(rval), rval);
         DBCLOSE(dbp);
         free(res);
         return NULL;
     }
-
-    dbp->set_errfile(dbp, stderr);
 #endif
 
     res->internals = malloc(sizeof(DB**));

@@ -13,12 +13,14 @@ import native
 class Smache:
     def __init__(self, config):
         self.sm = native.smache_create()
+        self.nh = native.smache_create_hash()
 
         # Set the debug appropriately.
         self.setdebug(config.smache.get("debug", False))
         self.setprogress(config.smache.get("progress", False))
-        self.setblock(config.smache.get("block", False))
         self.setcompression(config.smache.get("compression", False))
+        self.setblockalgo(config.smache.get("blockalgo", False))
+        self.setblocksize(int(config.smache.get("blocksize", 512)))
 
         # Create all the necessary backends.
         for (btype, options) in config.backends:
@@ -26,6 +28,7 @@ class Smache:
 
     def __del__(self):
         native.smache_destroy(self.sm)
+        native.smache_delete_hash(self.nh)
 
     #
     # Options.
@@ -34,8 +37,10 @@ class Smache:
         native.smache_setdebug(self.sm, int(state))
     def setprogress(self, progress):
         native.smache_setprogress(self.sm, int(progress))
-    def setblock(self, block):
+    def setblockalgo(self, block):
         native.smache_setblockalgorithm(self.sm, int(block))
+    def setblocksize(self, block):
+        self.blocksize = block
     def setcompression(self, compression):
         native.smache_setcompressiontype(self.sm, int(compression))
 
@@ -46,20 +51,25 @@ class Smache:
     #
 
     def getfile(self, hash, filename):
-        nativehash = native.smache_create_hash()
-        native.smache_parsehash(nativehash, hash)
-        native.smache_getfile(self.sm, nativehash, filename)
-        native.smache_delete_hash(nativehash)
+        native.smache_parsehash(self.nh, hash)
+        native.smache_getfile(self.sm, self.nh, filename)
         sys.stderr.write("extracted %s -> %s\n" % (hash, filename))
 
     def addfile(self, filename):
-        nativehash = native.smache_create_hash()
-        native.smache_putfile(self.sm, nativehash, filename, 512)
-        hash = native.smache_create_hashstr(nativehash)
+        native.smache_putfile(self.sm, self.nh, filename, self.blocksize)
+        hash = native.smache_temp_hashstr(self.nh)
         hashcopy = hash[:]
-        native.smache_delete_hash(nativehash)
-        # NOTE: There is a known leak here.  Appears to cause
-        # Python to crash.  Exact cause as of yet unknown.
-        # -> native.smache_delete_hashstr(hash)
         sys.stderr.write("added %s <- %s\n" % (hashcopy, filename))
         return hashcopy
+
+    def length(self, hash):
+        native.smache_parsehash(self.nh, hash)
+        return native.smache_info_length(self.sm, self.nh)
+
+    def totallength(self, hash):
+        native.smache_parsehash(self.nh, hash)
+        return native.smache_info_totallength(self.sm, self.nh)
+
+    def references(self, hash):
+        native.smache_parsehash(self.nh, hash)
+        return native.smache_info_references(self.sm, self.nh)

@@ -81,9 +81,10 @@ int smache_getfile(smache* sm, smache_hash* hash, const char* filename)
     /*
      * Given the correct hash, stat the file.
      */
-    size_t length;
+    uint64_t length;
+    uint64_t totallength;
     size_t references;
-    if( smache_info(sm, hash, &length, &references) != SMACHE_SUCCESS )
+    if( smache_info(sm, hash, &length, &totallength, &references) != SMACHE_SUCCESS )
     {
         fprintf(stderr, "error: unable to stat %s.\n", filename);
         return SMACHE_ERROR;
@@ -102,23 +103,23 @@ int smache_getfile(smache* sm, smache_hash* hash, const char* filename)
     /*
      * Make the file the correct length.
      */
-    lseek(filedes, length-1, SEEK_SET);
+    lseek(filedes, totallength-1, SEEK_SET);
     char zero = 0;
     write(filedes, &zero, 1);
 
     /*
      * Open in an mmap region.
      */
-    void* map_region = mmap(NULL, length, PROT_WRITE, MAP_SHARED, filedes, 0);
+    void* map_region = mmap(NULL, totallength, PROT_WRITE, MAP_SHARED, filedes, 0);
     if( map_region == NULL || map_region == (void*)-1 )
     {
         fprintf(stderr, "mmap: %s (%d)\n", strerror(errno), errno);
         close(filedes);
         return SMACHE_ERROR;
     }
-    if( smache_get(sm, hash, 0, map_region, length) != SMACHE_SUCCESS )
+    if( smache_get(sm, hash, 0, map_region, totallength) != SMACHE_SUCCESS )
     {
-        munmap(map_region, length);
+        munmap(map_region, totallength);
         close(filedes);
         return SMACHE_ERROR;
     }
@@ -126,7 +127,7 @@ int smache_getfile(smache* sm, smache_hash* hash, const char* filename)
     /*
      * Unmap the region and close the file.
      */
-    munmap(map_region, length);
+    munmap(map_region, totallength);
     close(filedes);
 
     return SMACHE_SUCCESS;

@@ -234,6 +234,10 @@ smache_get_flags(smache* instance, smache_hash* hash, uint64_t offset, int adjre
                 {
                     *totallength = metahash[count-1].offset;
                 }
+                if( length )
+                {
+                    *length = uncompressed_length;
+                }
 
                 size_t lastend      = (index > 0 ? metahash[index-1].offset : 0);
                 smache_hash newhash = metahash[index].hash;
@@ -250,18 +254,21 @@ smache_get_flags(smache* instance, smache_hash* hash, uint64_t offset, int adjre
             else
             {
                 size_t availlength = uncompressed_length - offset;
-                size_t minlength = *length < availlength ? *length : availlength;
 
                 ARROWS();
                 SMACHE_DEBUG(instance, "Chunk is a normal hash.\n");
-                ARROWS();
-                SMACHE_DEBUG(instance, "Returning %ld of %ld bytes.\n", (long)minlength, (long)availlength);
 
-                if( data )
+                if( length )
                 {
-                    memcpy(data, uncompressed + offset, minlength);
+                    size_t minlength = *length < availlength ? *length : availlength;
+                    if( data )
+                    {
+                        ARROWS();
+                        SMACHE_DEBUG(instance, "Returning %ld of %ld bytes.\n", (long)minlength, (long)availlength);
+                        memcpy(data, uncompressed + offset, minlength);
+                    }
+                    *length = minlength;
                 }
-                *length = minlength;
                 if( totallength )
                 {
                     *totallength = uncompressed_length;
@@ -360,10 +367,13 @@ smache_adjref(smache* instance, smache_hash* hash, int refs)
 }
 
 int
-smache_info(smache* instance, smache_hash* hash, uint64_t* length, size_t* references)
+smache_info(smache* instance, smache_hash* hash, uint64_t* length, uint64_t* totallength, size_t* references)
 {
-    size_t thislength = 0;
-    int rval = smache_get_flags(instance, hash, 0, 0, NULL, &thislength, length, references, 0);
+    if( length ) 
+    {
+        *length = SMACHE_MAXIMUM_CHUNKSIZE;
+    }
+    int rval = smache_get_flags(instance, hash, 0, 0, NULL, length, totallength, references, 0);
     return rval;
 }
 

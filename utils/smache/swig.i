@@ -38,6 +38,7 @@ smache_backend* smache_remote_backend(int socket);
 int smache_computehash(smache_hash*, const void* data, size_t length);
 int smache_parsehash(smache_hash*, const char*);
 char* smache_create_hashstr(smache_hash*);
+char* smache_temp_hashstr(smache_hash*);
 void smache_delete_hashstr(char*);
 
 int smache_getfile(smache*, smache_hash*, const char* filename);
@@ -52,7 +53,10 @@ smache* smache_create();
 int smache_add_backend(smache*, smache_backend*);
 void smache_destroy(smache*);
 
-int smache_info(smache*, smache_hash*, size_t* length, size_t* references);
+int smache_info(smache*, smache_hash*, uint64_t* length, uint64_t* totallength, size_t* references);
+unsigned int smache_info_length(smache*, smache_hash*);
+unsigned int smache_info_totallength(smache*, smache_hash*);
+unsigned int smache_info_references(smache*, smache_hash*);
 int smache_get(smache*, smache_hash*, size_t offset, void* data, size_t length);
 int smache_put(smache*, smache_hash* rval, void* data, size_t length, size_t block_size);
 int smache_delete(smache*, smache_hash*);

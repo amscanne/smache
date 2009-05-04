@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-import sys
 import instance
+import stats
+import sys
 import os
 import stat
 
@@ -43,6 +44,9 @@ class Index:
     def list(self):
         return self.index.keys()
 
+    def hashes(self):
+        return map(lambda x: x[0], self.index.values())
+
     def extract(self, sm, files):
         for file in files:
             self.extractone(sm, file)
@@ -83,11 +87,15 @@ class FileStore:
             sys.stderr.write("error: No index defined in the configuration file.\n")
             sys.exit(1)
 
+        self.config   = config
         self.index    = Index(config.smache["index"])
         self.instance = instance.Smache(config)
 
     def list(self):
         return self.index.list()
+
+    def getstats(self):
+        return stats.Stats(self.instance, self.index, self.config)
 
     def save(self):
         return self.index.save()

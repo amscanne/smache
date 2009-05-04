@@ -5,3 +5,4 @@ from config import *
 from instance import *
 from backends import *
 from files import *
+from stats import *
