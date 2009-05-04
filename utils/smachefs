@@ -5,8 +5,8 @@ import smache.fs
 import sys
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print "usage: %s <smache.config> <mountpoint>" % sys.argv[0]
+    if len(sys.argv) < 3:
+        print "usage: %s <smache.config> <mountpoint> [fuse options...]" % sys.argv[0]
         sys.exit(1)
     
     spec  = smache.Config(sys.argv[1])
