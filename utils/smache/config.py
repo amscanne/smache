@@ -59,7 +59,11 @@ class Config:
 
         for s in cp.sections():
             options = dict()
-            options.update(map(lambda (k, v): (k, keyword_mappers.has_key(k) and keyword_mappers[k](v) or v), cp.items(s)))
+            for (k, v) in cp.items(s):
+                if keyword_mappers.has_key(k):
+                    options[k] = keyword_mappers[k](v)
+                else:
+                    options[k] = v
 
             # NOTE: Special section is "smache".
             if s == "smache":

@@ -18,8 +18,8 @@ class Smache:
         # Set the debug appropriately.
         self.setdebug(config.smache.get("debug", False))
         self.setprogress(config.smache.get("progress", False))
-        self.setcompression(config.smache.get("compression", False))
-        self.setblockalgo(config.smache.get("blockalgo", False))
+        self.setcompression(config.smache.get("compression", native.SMACHE_NONE))
+        self.setblockalgo(config.smache.get("blockalgo", native.SMACHE_FIXED))
         self.setblocksize(int(config.smache.get("blocksize", 512)))
 
         # Create all the necessary backends.
@@ -42,6 +42,7 @@ class Smache:
     def setblocksize(self, block):
         self.blocksize = block
     def setcompression(self, compression):
+        print int(compression)
         native.smache_setcompressiontype(self.sm, int(compression))
 
     #
