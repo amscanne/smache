@@ -63,7 +63,7 @@ def main(args):
     #
     for file in args[2:]:
         store.add(file, False)
-    store.save()
+    store.index.save()
 
     #
     # Re-create the store object.
