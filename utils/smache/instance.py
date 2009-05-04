@@ -42,7 +42,6 @@ class Smache:
     def setblocksize(self, block):
         self.blocksize = block
     def setcompression(self, compression):
-        print int(compression)
         native.smache_setcompressiontype(self.sm, int(compression))
 
     #

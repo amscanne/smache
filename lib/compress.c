@@ -58,7 +58,7 @@ smache_uncompress(smache_chunk* chunk, void** data, size_t* length)
     }
     else
     {
-        fprintf(stderr, "compression: Unsupported type.\n");
+        fprintf(stderr, "compression: Unsupported type (%d).\n", chunk->compression_type);
         return SMACHE_ERROR;
     }
 

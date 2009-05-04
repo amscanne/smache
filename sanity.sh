@@ -9,7 +9,7 @@ set -e
 
 export LD_LIBRARY_PATH=/home/amscanne/bio/smache/lib/:$LD_LIBRARY_PATH
 export PYTHONPATH=/home/amscanne/bio/smache/utils/build/lib.linux-x86_64-2.5/:$PYTHONPATH
-#DEBUG="gdb --args python2.5"
+DEBUG="gdb --args python2.5"
 #DEBUG="valgrind --leak-check=full"
 
 #
