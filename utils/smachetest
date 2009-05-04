@@ -1,0 +1,91 @@
+#!/usr/bin/env python
+
+import smache
+import sys
+import os
+import stat
+import md5
+
+def usage(args):
+    print "usage: %s <type> <files...>" % (args[0])
+    print "where <type> is one of: fixed, rabin-256, rabin-512, rabin-1024"
+
+def hashname(files):
+    digest = md5.new()
+    for file in files:
+        digest.update(file)
+    return digest.hexdigest()
+
+def main(args):
+    if len(args) < 3:
+        usage(args)
+        return
+
+    #
+    # Generate a unique (but repeatable) name.
+    #
+    name = hashname(args[2:]) + "-" + args[1]
+    indexname = name + ".index"
+    dbname    = name + ".db"
+
+    #
+    # Configure depending on the type.
+    #
+    spec = smache.Config()
+    spec.smache["compression"] = smache.native.SMACHE_LZO
+    spec.smache["progress"]    = True
+    spec.smache["index"]       = indexname
+    spec.backends.append( (smache.backends.getclass("berkeleydb"), {"filename":dbname}) )
+
+    #
+    # Set the appropriate blocking parameters.
+    # 
+    if args[1] == "fixed":
+        spec.smache["blockalgo"] = smache.native.SMACHE_FIXED
+        spec.smache["blacksize"] = 512
+    elif args[1] == "rabin-256":
+        spec.smache["blockalgo"] = smache.native.SMACHE_RABIN
+        spec.smache["blacksize"] = 256
+    elif args[1] == "rabin-512":
+        spec.smache["blockalgo"] = smache.native.SMACHE_RABIN
+        spec.smache["blacksize"] = 512
+    elif args[1] == "rabin-1024":
+        spec.smache["blockalgo"] = smache.native.SMACHE_RABIN
+        spec.smache["blacksize"] = 1024
+
+    #
+    # Create the store object (if necessary).
+    #
+    store = smache.FileStore(spec)
+
+    #
+    # Add all files that are not in the store.
+    #
+    for file in args[2:]:
+        store.add(file, False)
+    store.save()
+
+    #
+    # Re-create the store object.
+    #
+    store = smache.FileStore(spec)
+
+    stats = store.getstats()
+    totalsize = stats.totalsize()
+    origsize  = stats.origsize()
+    datasize  = stats.datasize()
+    keycount  = stats.keycount()
+    keyover   = stats.keyoverhead()
+    hashover  = stats.hashoverhead()
+    otherover = (totalsize - datasize) - (keyover + hashover)
+
+    print "Original size:   %d" % origsize
+    print "SMACHE size:     %d" % totalsize
+    print " Keys:           %d" % keycount
+    print " Data size:      %d" % datasize
+    print " Key overhead:   %d" % keyover
+    print " Hash overhead:  %d" % hashover
+    print " Other overhead: %d" % otherover
+
+if __name__ == "__main__":
+    main(sys.argv)
