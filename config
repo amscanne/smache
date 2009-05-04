@@ -2,8 +2,8 @@
 index = /tmp/smache.index
 debug = 1
 progress = 1
-progress = 1
-block = rabin
+blockalgo = rabin
+blocksize = 512
 compression = lzo
 
 [berkeleydb]
