@@ -13,8 +13,9 @@ if __name__ == "__main__":
     store = smache.FileStore(spec)
     fs    = smache.fs.FS(store)
 
-    fs.flags         = 0
-    fs.multithreaded = 0
-    fs.mountpoint    = sys.argv[2]
+    newargs = [sys.argv[0]]
+    newargs.extend(sys.argv[2:])
+    sys.argv = newargs
+    fs.parse(errex=1)
 
     fs.main()

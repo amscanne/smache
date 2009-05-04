@@ -27,7 +27,7 @@ def main(args):
     #
     if args[1] == "x":
         if len(args) == 3:
-            store.extract(store.list())
+            store.extract(store.index.list())
         else:
             store.extract(args[3:])
 
@@ -35,10 +35,10 @@ def main(args):
         store.add(args[3:])
 
     elif args[1] == "l":
-        for f in store.list():
+        for f in store.index.list():
             print f
 
-    store.save()
+    store.index.save()
 
 if __name__ == "__main__":
     main(sys.argv)

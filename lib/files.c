@@ -117,7 +117,7 @@ int smache_getfile(smache* sm, smache_hash* hash, const char* filename)
         close(filedes);
         return SMACHE_ERROR;
     }
-    if( smache_get(sm, hash, 0, map_region, totallength) != SMACHE_SUCCESS )
+    if( smache_get(sm, hash, 0, map_region, &totallength) != SMACHE_SUCCESS )
     {
         munmap(map_region, totallength);
         close(filedes);

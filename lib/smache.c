@@ -319,23 +319,35 @@ smache_get_flags(smache* instance, smache_hash* hash, uint64_t offset, int adjre
 }
 
 int
-smache_get(smache* instance, smache_hash* hash, size_t offset, void* data, size_t length)
+smache_get(smache* instance, smache_hash* hash, uint64_t offset, void* data, uint64_t* length)
 {
     int rval = SMACHE_SUCCESS;
 
     /*
+     * Save the original offset and get the total length.
+     */
+    uint64_t orig_offset = offset;
+    uint64_t totallength = 0;
+    rval = smache_info(instance, hash, NULL, &totallength, NULL);
+
+    /*
      * Loop through and call get repeatedly.
      */
-    while( length > 0 && rval == SMACHE_SUCCESS )
+    while( length > 0 && offset < totallength && rval == SMACHE_SUCCESS )
     {
-        SMACHE_DEBUG(instance, "Getting offset %ld, length %ld of key %s.\n", (long)offset, (long)length, smache_temp_hashstr(hash));
-        size_t thislength = length;
+        SMACHE_DEBUG(instance, "Getting offset %ld, length %ld of key %s (%ld left).\n", (long)offset, (long)length, smache_temp_hashstr(hash), (long)totallength-offset);
+        uint64_t thislength = *length;
         rval = smache_get_flags(instance, hash, offset, 0, (char*)data, &thislength, NULL, NULL, 0);
         SMACHE_DEBUG(instance, "Received data of length %ld.\n", (long)thislength);
         data = (void*)(((unsigned char*)data) + thislength);
-        length -= thislength;
-        offset += thislength;
+        *length -= thislength;
+        offset  += thislength;
     }
+
+    /*
+     * Save the amount copied.
+     */
+    *length = (offset - orig_offset);
 
     return rval;
 }
@@ -378,7 +390,7 @@ smache_info(smache* instance, smache_hash* hash, uint64_t* length, uint64_t* tot
 }
 
 static int
-smache_put_flags(smache* instance, smache_hash* hash, void* data, size_t length, size_t block_length, int depth)
+smache_put_flags(smache* instance, smache_hash* hash, void* data, uint64_t length, size_t block_length, int depth)
 {
     int rval = SMACHE_SUCCESS;
     float perc = 0;
@@ -545,7 +557,7 @@ smache_put_flags(smache* instance, smache_hash* hash, void* data, size_t length,
 }
 
 int
-smache_put(smache* instance, smache_hash* rval, void* data, size_t length, size_t block_length)
+smache_put(smache* instance, smache_hash* rval, void* data, uint64_t length, size_t block_length)
 {
     return smache_put_flags(instance, rval, data, length, block_length, 0);
 }

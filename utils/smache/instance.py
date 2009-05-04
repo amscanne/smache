@@ -62,6 +62,15 @@ class Smache:
         sys.stderr.write("added %s <- %s\n" % (hashcopy, filename))
         return hashcopy
 
+    def get(self, hash, offset, length):
+        buffer = "0" * length
+        native.smache_parsehash(self.nh, hash)
+        len = native.smache_get_wrap(self.sm, self.nh, offset, buffer, length);
+        if len < 0:
+            return None
+        else:
+            return buffer[:len]
+
     def length(self, hash):
         native.smache_parsehash(self.nh, hash)
         return native.smache_info_length(self.sm, self.nh)

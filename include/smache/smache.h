@@ -172,7 +172,7 @@ void smache_destroy(smache*);
  */
 int smache_info(smache*, smache_hash*, uint64_t* length, uint64_t* totallength, size_t* references);
 int smache_adjref(smache* instance, smache_hash* hash, int references);
-int smache_get(smache*, smache_hash*, uint64_t offset, void* data, uint64_t length);
+int smache_get(smache*, smache_hash*, uint64_t offset, void* data, uint64_t* length);
 int smache_put(smache*, smache_hash* rval, void* data, uint64_t length, size_t block_size);
 int smache_delete(smache*, smache_hash*);
 

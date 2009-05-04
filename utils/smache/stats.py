@@ -37,7 +37,6 @@ class Stats:
                 self.builddbstats(options["filename"])
 
     def builddbstats(self, filename):
-        sys.stderr.write("Building stats for %s...\n" % filename)
         db = bsddb.btopen(filename)
         hashes = db.keys()
         for h in hashes:

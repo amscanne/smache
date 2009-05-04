@@ -1,147 +1,172 @@
 #!/usr/bin/python
 
+try:
+    import _find_fuse_parts
+except ImportError:
+    pass
+import fuse
 from fuse import Fuse
 from time import time
 
-import stat    # for file properties
-import os      # for filesystem modes (O_RDONLY, etc)
-import errno   # for error number codes (ENOENT, etc)
-               # - note: these must be returned as negatives
+fuse.fuse_python_api = (0, 2)
 
-def dirFromList(list):
-    """
-    Return a properly formatted list of items suitable to a directory listing.
-    [['a', 'b', 'c']] => [[('a', 0), ('b', 0), ('c', 0)]]
-    """
-    return [[(x, 0) for x in list]]
+import stat
+import os
+import errno
+import sys
 
-def getDepth(path):
-    """
-    Return the depth of a given path, zero-based from root ('/')
-    """
-    if path == '/':
-        return 0
-    else:
-        return path.count('/')
+#
+# This file is based on the fuse example file system.
+# NOTE: We don't support mutable files currently, only
+# exporting read-only file systems.
+#
 
-def getParts(path):
-    """
-    Return the slash-separated parts of a given path as a list
-    """
-    if path == '/':
-        return [['/']]
-    else:
-        return path.split('/')
+class BaseStat(fuse.Stat):
+    def __init__(self):
+        self.st_mode  = 0
+        self.st_ino   = 0
+        self.st_dev   = 0
+        self.st_nlink = 0
+        self.st_uid   = 0
+        self.st_gid   = 0
+        self.st_size  = 0
+        self.st_atime = 0
+        self.st_mtime = 0
+        self.st_ctime = 0
+    def __str__(self):
+        return "Mode: %o Ino: %d Dev: %d Nlink: %d Uid: %d Gid: %d Size: %d Atime: %d Mtime: %d Ctime: %d" % \
+            (int(self.st_mode), int(self.st_ino), int(self.st_dev), int(self.st_nlink), \
+             int(self.st_uid), int(self.st_gid), int(self.st_size), \
+             int(self.st_atime), int(self.st_mtime), int(self.st_ctime))
 
 class FS(Fuse):
 
-    def __init__(self, *args, **kw):
-        Fuse.__init__(self, *args, **kw)
-
-        print 'Init complete.'
+    def __init__(self, store):
+        Fuse.__init__(self)
+        self.store         = store
+        self.files         = self.normedfiles()
+        self.dirs          = self.normeddirs()
 
     def getattr(self, path):
-        """
-        - st_mode (protection bits)
-        - st_ino (inode number)
-        - st_dev (device)
-        - st_nlink (number of hard links)
-        - st_uid (user ID of owner)
-        - st_gid (group ID of owner)
-        - st_size (size of file, in bytes)
-        - st_atime (time of most recent access)
-        - st_mtime (time of most recent content modification)
-        - st_ctime (platform dependent; time of most recent metadata change on Unix,
-                    or the time of creation on Windows).
-        """
+        st   = BaseStat()
+        path = os.path.normpath(path)
 
-        print '*** getattr', path
+        while len(path) > 0 and path[0] == '/':
+            path = path[1:]
 
-        depth = getDepth(path)     # depth of path, zero-based from root
-        pathparts = getParts(path) # the actual parts of the path
+        #
+        # Take care of the case of a directory.
+        #
+        if not(path) or path in self.dirs:
+            st.st_nlink = 2
+            st.st_mode  = stat.S_IFDIR | 0755
+            return st
 
-        return -errno.ENOSYS
+        #
+        # Figure out if it's a file, and the path in the index.
+        #
+        elif path in self.files:
+            if self.store.index.contains(path):
+                realname = path
+            elif self.store.index.contains('/' + path):
+                realname = '/' + path
+            else:
+                return -errno.ENOENT
 
-    def getdir(self, path):
-        """
-        return: [[('file1', 0), ('file2', 0), ... ]]
-        """
+        #
+        # Otherwise, it doesn't exist.
+        #
+        else:
+            return -errno.ENOENT
 
-        print '*** getdir', path
-        return -errno.ENOSYS
+        #
+        # Take all the stat settings from the index.
+        #
+        st.st_mode  = self.store.index.mode(realname)
+        st.st_nlink = 1
+        st.st_size  = self.store.length(realname)
+        st.st_uid   = self.store.index.uid(realname)
+        st.st_gid   = self.store.index.gid(realname)
+        st.st_atime = self.store.index.atime(realname)
+        st.st_mtime = self.store.index.mtime(realname)
+        st.st_ctime = self.store.index.ctime(realname)
 
-    def mythread ( self ):
-        print '*** mythread'
-        return -errno.ENOSYS
+        return st
 
-    def chmod ( self, path, mode ):
-        print '*** chmod', path, oct(mode)
-        return -errno.ENOSYS
+    def normedfiles(self):
+        #
+        # Build the list of all files.
+        #
+        files = self.store.index.list()
+        for i in range(len(files)):
+            files[i] = os.path.normpath(files[i])
+            if files[i][0] == '/':
+                files[i] == files[i][1:]
+        return files
 
-    def chown ( self, path, uid, gid ):
-        print '*** chown', path, uid, gid
-        return -errno.ENOSYS
+    def normeddirs(self):
+        #
+        # Build the list of all directories.
+        #
+        dirs = []
+        for file in self.files:
+            dirname = os.path.dirname(file)
+            dirs.append(dirname) 
+        return dirs
 
-    def fsync ( self, path, isFsyncFile ):
-        print '*** fsync', path, isFsyncFile
-        return -errno.ENOSYS
+    #
+    # Built up a list of matching files.
+    #
+    def readdir(self, path, offset):
+        path  = os.path.normpath(path)
+        while len(path) > 0 and path[0] == '/':
+            path = path[1:]
 
-    def link ( self, targetPath, linkPath ):
-        print '*** link', targetPath, linkPath
-        return -errno.ENOSYS
+        files = {'.':True, '..':True}
+        for f in self.files:
+            if os.path.dirname(f) == path:
+                files[os.path.basename(f)] = True
+        for f in self.dirs:
+            if os.path.dirname(f) == path:
+                files[os.path.basename(f)] = True
 
-    def mkdir ( self, path, mode ):
-        print '*** mkdir', path, oct(mode)
-        return -errno.ENOSYS
+        for r in files.keys():
+            yield fuse.Direntry(r)
 
-    def mknod ( self, path, mode, dev ):
-        print '*** mknod', path, oct(mode), dev
-        return -errno.ENOSYS
+    def open(self, path, flags):
+        path = os.path.normpath(path)
+        while len(path) > 0 and path[0] == '/':
+            path = path[1:]
 
-    def open ( self, path, flags ):
-        print '*** open', path, flags
-        return -errno.ENOSYS
+        if not(path in self.dirs) and not(path in self.files):
+            f.write("Not found.\n")
+            f.close()
+            return -errno.ENOENT
 
-    def read ( self, path, length, offset ):
-        print '*** read', path, length, offset
-        return -errno.ENOSYS
+        accmode = os.O_RDONLY | os.O_WRONLY | os.O_RDWR
+        if (flags & accmode) != os.O_RDONLY:
+            f.write("Not allowed.\n")
+            f.close()
+            return -errno.EACCESS
 
-    def readlink ( self, path ):
-        print '*** readlink', path
-        return -errno.ENOSYS
+        return 0
 
-    def release ( self, path, flags ):
-        print '*** release', path, flags
-        return -errno.ENOSYS
+    def read(self, path, size, offset):
+        path = os.path.normpath(path)
+        while len(path) > 0 and path[0] == '/':
+            path = path[1:]
 
-    def rename ( self, oldPath, newPath ):
-        print '*** rename', oldPath, newPath
-        return -errno.ENOSYS
+        err = self.open(path, os.O_RDONLY)
+        if err:
+            return err
 
-    def rmdir ( self, path ):
-        print '*** rmdir', path
-        return -errno.ENOSYS
+        if self.store.index.contains(path):
+            realname = path
+        elif self.store.index.contains('/' + path):
+            realname = '/' + path
+        else:
+            return -errno.ENOENT
 
-    def statfs ( self ):
-        print '*** statfs'
-        return -errno.ENOSYS
-
-    def symlink ( self, targetPath, linkPath ):
-        print '*** symlink', targetPath, linkPath
-        return -errno.ENOSYS
-
-    def truncate ( self, path, size ):
-        print '*** truncate', path, size
-        return -errno.ENOSYS
-
-    def unlink ( self, path ):
-        print '*** unlink', path
-        return -errno.ENOSYS
-
-    def utime ( self, path, times ):
-        print '*** utime', path, times
-        return -errno.ENOSYS
-
-    def write ( self, path, buf, offset ):
-        print '*** write', path, buf, offset
-        return -errno.ENOSYS
+        hash = self.store.index.lookup(realname)
+        buff = self.store.instance.get(hash, offset, size)
+        return buff

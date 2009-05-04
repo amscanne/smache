@@ -38,28 +38,35 @@ smache_compression_fini()
 int
 smache_uncompress(smache_chunk* chunk, void** data, size_t* length)
 {
-    if( chunk->compression_type == SMACHE_NONE )
+    switch( chunk->compression_type )
     {
-        /*
-         * Just copy out a pointer to the data.
-         */
-        *data   = chunk->data;
-        *length = chunk->length; 
-    }
-    else if( chunk->compression_type == SMACHE_LZO )
-    {
-        /*
-         * Decompress to the scratch data chunk.
-         * NOTE: This will set the length automatically.
-         */
-        *length = SMACHE_MAXIMUM_CHUNKSIZE*2;
-        lzo1f_decompress( chunk->data, chunk->length, lzo_data_chunk, length, lzo_working_mem);
-        *data = lzo_data_chunk;
-    }
-    else
-    {
-        fprintf(stderr, "compression: Unsupported type (%d).\n", chunk->compression_type);
-        return SMACHE_ERROR;
+        case SMACHE_NONE:
+        {
+            /*
+             * Just copy out a pointer to the data.
+             */
+            *data   = chunk->data;
+            *length = chunk->length; 
+            break;
+        }
+
+        case SMACHE_LZO:
+        {
+            /*
+             * Decompress to the scratch data chunk.
+             * NOTE: This will set the length automatically.
+             */
+            *length = SMACHE_MAXIMUM_CHUNKSIZE*2;
+            lzo1f_decompress( chunk->data, chunk->length, lzo_data_chunk, length, lzo_working_mem);
+            *data = lzo_data_chunk;
+            break;
+        }
+
+        default:
+        {
+            fprintf(stderr, "compression: Unsupported compression type (%d).\n", chunk->compression_type);
+            return SMACHE_ERROR;
+        }
     }
 
     return SMACHE_SUCCESS;
@@ -68,32 +75,41 @@ smache_uncompress(smache_chunk* chunk, void** data, size_t* length)
 int
 smache_compress(smache_chunk* chunk, void* data, size_t length, smache_compression_type compression)
 {
-    if( compression == SMACHE_LZO )
+    switch( compression )
     {
-        size_t compressed_length = SMACHE_MAXIMUM_CHUNKSIZE * 2;
-        lzo1f_999_compress( data, length, lzo_data_chunk, &compressed_length, (lzo_voidp)lzo_working_mem);
-        if( compressed_length > length )
+        case SMACHE_LZO:
         {
-            return smache_compress(chunk, data, length, SMACHE_NONE);
+            size_t compressed_length = SMACHE_MAXIMUM_CHUNKSIZE * 2;
+            lzo1f_999_compress( data, length, lzo_data_chunk, &compressed_length, (lzo_voidp)lzo_working_mem);
+            if( compressed_length > length )
+            {
+                return smache_compress(chunk, data, length, SMACHE_NONE);
+            }
+
+            /*
+             * Copy the compressed data in.
+             */
+            memcpy(chunk->data, lzo_data_chunk, compressed_length);
+            chunk->length = compressed_length;
+            chunk->compression_type = SMACHE_LZO;
+            break;
         }
 
-        /*
-         * Copy the compressed data in.
-         */
-        memcpy(chunk->data, lzo_data_chunk, compressed_length);
-        chunk->length = compressed_length;
-        chunk->compression_type = SMACHE_LZO;
-    }
-    else
-    {
-        fprintf(stderr, "warning: Unsupported compression type.\n");
+        default:
+        {
+            if( compression != SMACHE_NONE )
+            {
+                fprintf(stderr, "compression: Unsupported compression type (%d).\n", compression);
+            }
 
-        /*
-         * Simply copy in the data.
-         */
-        memcpy(chunk->data, data, length);
-        chunk->length = length;
-        chunk->compression_type = SMACHE_NONE;
+            /*
+             * Simply copy in the data.
+             */
+            memcpy(chunk->data, data, length);
+            chunk->length = length;
+            chunk->compression_type = SMACHE_NONE;
+            break;
+        }
     }
 
     return SMACHE_SUCCESS;

@@ -49,11 +49,6 @@ bdb_get(smache_backend* backend, smache_hash* hash, smache_chunk* data)
     int rval = DBGET(dbp, key, val);
     if( rval ) 
     {
-#ifdef __APPLE__
-        fprintf(stderr, "bdb_get: %s (%d)\n", strerror(errno), errno);
-#else
-        fprintf(stderr, "bdb_get: %s (%d)\n", smache_temp_hashstr(hash), rval);
-#endif
         return SMACHE_ERROR;
     }
 
@@ -87,11 +82,6 @@ bdb_put(smache_backend* backend, smache_hash* hash, smache_chunk* data)
     int rval = DBPUT(dbp, key, val);
     if( rval )
     {
-#ifdef __APPLE__
-        fprintf(stderr, "bdb_put: %s (%d)\n", strerror(errno), errno);
-#else
-        fprintf(stderr, "bdb_put: %s (%d)\n", smache_temp_hashstr(hash), rval);
-#endif
         return SMACHE_ERROR;
     }
 
@@ -116,11 +106,6 @@ bdb_delete(smache_backend* backend, smache_hash* hash)
     int rval = DBDEL(dbp, key);
     if( rval )
     {
-#ifdef __APPLE__
-        fprintf(stderr, "bdb_delete: %s (%d)\n", strerror(errno), errno);
-#else
-        fprintf(stderr, "bdb_delete: %s (%d)\n", smache_temp_hashstr(hash), rval);
-#endif
         return SMACHE_ERROR;
     }
     return SMACHE_SUCCESS;
@@ -134,11 +119,6 @@ bdb_close(smache_backend* backend)
     int rval = DBCLOSE(dbp);
     if( rval )
     {
-#ifdef __APPLE__
-        fprintf(stderr, "bdb_close: %s (%d)\n", strerror(errno), errno);
-#else
-        fprintf(stderr, "bdb_close: (%d)\n", rval);
-#endif
         free(backend->internals);
         free(backend);
         return SMACHE_ERROR;
@@ -159,7 +139,7 @@ smache_backend* smache_berkeleydb_backend(const char* filename)
     }
 
 #ifdef __APPLE__
-    DB* dbp = dbopen(filename, O_CREAT, 0644, DB_BTREE, NULL);
+    DB* dbp = dbopen(filename, O_CREAT, 0644, DB_HASH, NULL);
     if( dbp == NULL )
     {
         fprintf(stderr, "dbopen: unknown error.\n");
@@ -177,7 +157,7 @@ smache_backend* smache_berkeleydb_backend(const char* filename)
     }
     
     dbp->set_errfile(dbp, stderr);
-    rval = dbp->open(dbp, NULL, filename, NULL, DB_BTREE, DB_CREATE, 0644);
+    rval = dbp->open(dbp, NULL, filename, NULL, DB_HASH, DB_CREATE, 0644);
     if( rval ) 
     {
         fprintf(stderr, "dbopen: %s (%d)\n", strerror(rval), rval);
