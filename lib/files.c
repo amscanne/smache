@@ -83,8 +83,7 @@ int smache_getfile(smache* sm, smache_hash* hash, const char* filename)
      */
     uint64_t length;
     uint64_t totallength;
-    size_t references;
-    if( smache_info(sm, hash, &length, &totallength, &references) != SMACHE_SUCCESS )
+    if( smache_info(sm, hash, NULL, NULL, &length, &totallength, NULL) != SMACHE_SUCCESS )
     {
         fprintf(stderr, "error: unable to stat %s.\n", filename);
         return SMACHE_ERROR;

@@ -56,11 +56,12 @@ smache* smache_create();
 int smache_add_backend(smache*, smache_backend*);
 void smache_destroy(smache*);
 
-int smache_info(smache*, smache_hash*, uint64_t* length, uint64_t* totallength, size_t* references);
 unsigned int smache_info_length(smache*, smache_hash*);
 unsigned int smache_info_totallength(smache*, smache_hash*);
 unsigned int smache_info_references(smache*, smache_hash*);
-int smache_get(smache*, smache_hash*, size_t offset, void* data, size_t* length);
+unsigned int smache_info_compression(smache*, smache_hash*);
+unsigned int smache_info_metahash(smache*, smache_hash*);
+
 int smache_get_wrap(smache* instance, smache_hash* hash, size_t offset, char* data, size_t length);
 int smache_put(smache*, smache_hash* rval, void* data, size_t length, size_t block_size);
 int smache_delete(smache*, smache_hash*);

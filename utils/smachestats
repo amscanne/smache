@@ -19,22 +19,7 @@ def main(args):
     spec  = smache.Config(sys.argv[1])
     store = smache.FileStore(spec)
     stats = store.getstats()
-
-    totalsize = stats.totalsize()
-    origsize  = stats.origsize()
-    datasize  = stats.datasize()
-    keycount  = stats.keycount()
-    keyover   = stats.keyoverhead()
-    hashover  = stats.hashoverhead()
-    otherover = (totalsize - datasize) - (keyover + hashover)
-
-    print "Keys: %d" % keycount
-    print "Original size: %d" % origsize
-    print "SMACHE size: %d" % totalsize
-    print " Data size: %d" % datasize
-    print " Key overhead: %d" % keyover
-    print " Hash overhead: %d" % hashover
-    print " Other overhead: %d" % otherover
+    stats.dump()
 
 if __name__ == "__main__":
     main(sys.argv)

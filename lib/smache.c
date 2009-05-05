@@ -164,8 +164,11 @@ _smache_put(smache* instance, smache_hash* hash, smache_chunk* chunk, int adjref
     }
 
 static int
-smache_get_flags(smache* instance, smache_hash* hash, uint64_t offset, int adjrefs,
-    void* data, uint64_t* length, uint64_t* totallength, size_t* references, int depth)
+smache_get_flags(smache* instance, smache_hash* hash,
+    uint64_t offset, int adjrefs,
+    void* data, uint64_t* length, uint64_t* totallength,
+    unsigned int* metahash_flag, smache_compression_type* compression_flag, 
+    size_t* references, int depth)
 {
     int rval = SMACHE_SUCCESS;
     smache_chunk* chunk = smache_create_chunk();
@@ -202,6 +205,18 @@ smache_get_flags(smache* instance, smache_hash* hash, uint64_t offset, int adjre
             }
             ARROWS();
             SMACHE_DEBUG(instance, "Uncompressed size is %ld.\n", (long)uncompressed_length);
+
+            /*
+             * Set the appropriate flags on return.
+             */
+            if( metahash_flag )
+            {
+                *metahash_flag = chunk->metahash;
+            }
+            if( compression_flag )
+            {
+                *compression_flag = chunk->compression_type;
+            }
 
             /*
              * Now, we see if it's a metahash and adjust the offset.
@@ -248,7 +263,7 @@ smache_get_flags(smache* instance, smache_hash* hash, uint64_t offset, int adjre
                     /* NOTE: We don't actually *use* the newoffset though. */
                     ARROWS();
                     SMACHE_DEBUG(instance, "Fetching from hash index %d (offset %ld).\n", index, (long)newoffset);
-                    rval = smache_get_flags(instance, &newhash, newoffset, adjrefs, data, length, NULL, NULL, depth+1);
+                    rval = smache_get_flags(instance, &newhash, newoffset, adjrefs, data, length, NULL, NULL, NULL, NULL, depth+1);
                 }
             }
             else
@@ -328,7 +343,7 @@ smache_get(smache* instance, smache_hash* hash, uint64_t offset, void* data, uin
      */
     uint64_t orig_offset = offset;
     uint64_t totallength = 0;
-    rval = smache_info(instance, hash, NULL, &totallength, NULL);
+    rval = smache_info(instance, hash, NULL, NULL, NULL, &totallength, NULL);
 
     /*
      * Loop through and call get repeatedly.
@@ -337,7 +352,7 @@ smache_get(smache* instance, smache_hash* hash, uint64_t offset, void* data, uin
     {
         SMACHE_DEBUG(instance, "Getting offset %ld, length %ld of key %s (%ld left).\n", (long)offset, (long)length, smache_temp_hashstr(hash), (long)totallength-offset);
         uint64_t thislength = *length;
-        rval = smache_get_flags(instance, hash, offset, 0, (char*)data, &thislength, NULL, NULL, 0);
+        rval = smache_get_flags(instance, hash, offset, 0, (char*)data, &thislength, NULL, NULL, NULL, NULL, 0);
         SMACHE_DEBUG(instance, "Received data of length %ld.\n", (long)thislength);
         data = (void*)(((unsigned char*)data) + thislength);
         *length -= thislength;
@@ -362,7 +377,7 @@ smache_adjref(smache* instance, smache_hash* hash, int refs)
      */
     uint64_t length = 0;
     uint64_t offset = 0;
-    rval = smache_get_flags(instance, hash, 0, 0, NULL, NULL, &length, NULL, 0);
+    rval = smache_get_flags(instance, hash, 0, 0, NULL, NULL, &length, NULL, NULL, NULL, 0);
 
     /*
      * Loop through and call get repeatedly.
@@ -370,7 +385,7 @@ smache_adjref(smache* instance, smache_hash* hash, int refs)
     while( length > 0 && rval == SMACHE_SUCCESS )
     {
         uint64_t thislength;
-        rval = smache_get_flags(instance, hash, offset, refs, NULL, &thislength, NULL, NULL, 0);
+        rval = smache_get_flags(instance, hash, offset, refs, NULL, &thislength, NULL, NULL, NULL, NULL, 0);
         length -= thislength;
         offset += thislength;
     }
@@ -379,13 +394,13 @@ smache_adjref(smache* instance, smache_hash* hash, int refs)
 }
 
 int
-smache_info(smache* instance, smache_hash* hash, uint64_t* length, uint64_t* totallength, size_t* references)
+smache_info(smache* instance, smache_hash* hash, unsigned int* metahash, smache_compression_type* compression, uint64_t* length, uint64_t* totallength, size_t* references)
 {
     if( length ) 
     {
         *length = SMACHE_MAXIMUM_CHUNKSIZE;
     }
-    int rval = smache_get_flags(instance, hash, 0, 0, NULL, length, totallength, references, 0);
+    int rval = smache_get_flags(instance, hash, 0, 0, NULL, length, totallength, metahash, compression, references, 0);
     return rval;
 }
 

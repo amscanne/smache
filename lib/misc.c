@@ -58,20 +58,34 @@ void smache_hash_null_check(smache_hash* instance)
 unsigned int smache_info_length(smache* instance, smache_hash* hash)
 {
     uint64_t length = SMACHE_MAXIMUM_CHUNKSIZE;
-    smache_info(instance, hash, &length, NULL, NULL);
+    smache_info(instance, hash, NULL, NULL, &length, NULL, NULL);
     return (unsigned int)length;
 }
 
 unsigned int smache_info_totallength(smache* instance, smache_hash* hash) 
 {
     uint64_t totallength = SMACHE_MAXIMUM_CHUNKSIZE;
-    smache_info(instance, hash, NULL, &totallength, NULL);
+    smache_info(instance, hash, NULL, NULL, NULL, &totallength, NULL);
     return (unsigned int)totallength;
 }
 
 unsigned int smache_info_references(smache* instance, smache_hash* hash)
 {
     size_t references = 0;
-    smache_info(instance, hash, NULL, NULL, &references);
+    smache_info(instance, hash, NULL, NULL, NULL, NULL, &references);
     return (unsigned int)references;
+}
+
+unsigned int smache_info_metahash(smache* instance, smache_hash* hash)
+{
+    unsigned int metahash = 0;
+    smache_info(instance, hash, &metahash, NULL, NULL, NULL, NULL);
+    return (unsigned int)metahash;
+}
+
+unsigned int smache_info_compression(smache* instance, smache_hash* hash)
+{
+    smache_compression_type compression = SMACHE_NONE;
+    smache_info(instance, hash, NULL, &compression, NULL, NULL, NULL);
+    return (unsigned int)compression;
 }

@@ -3,8 +3,10 @@
 import smache
 import sys
 import os
+import subprocess
 import stat
 import md5
+from pylab import *
 
 def usage(args):
     print "usage: %s <type> <files...>" % (args[0])
@@ -27,6 +29,7 @@ def main(args):
     name = hashname(args[2:]) + "-" + args[1]
     indexname = name + ".index"
     dbname    = name + ".db"
+    gzname    = name + ".tar.gz"
 
     #
     # Configure depending on the type.
@@ -66,26 +69,117 @@ def main(args):
     store.index.save()
 
     #
+    # Create the tar.gz if necessary.
+    #
+    if not(os.path.exists(gzname)):
+        gzipargs = ["tar", "-zcvf", gzname]
+        gzipargs.extend(args[2:])
+        subprocess.call(gzipargs)
+
+    #
     # Re-create the store object.
     #
     store = smache.FileStore(spec)
-
     stats = store.getstats()
+
+    #
+    # Dump the stats for good measure.
+    #
+    stats.dump()
+
+    #
+    # Create the basic graph... boxes with native, gzip and smache breakdown.
+    #
     totalsize = stats.totalsize()
-    origsize  = stats.origsize()
-    datasize  = stats.datasize()
-    keycount  = stats.keycount()
+    datasizec = stats.compressed_datasize()
     keyover   = stats.keyoverhead()
     hashover  = stats.hashoverhead()
-    otherover = (totalsize - datasize) - (keyover + hashover)
+    otherover = (totalsize - datasizec) - (keyover + hashover)
 
-    print "Original size:   %d" % origsize
-    print "SMACHE size:     %d" % totalsize
-    print " Keys:           %d" % keycount
-    print " Data size:      %d" % datasize
-    print " Key overhead:   %d" % keyover
-    print " Hash overhead:  %d" % hashover
-    print " Other overhead: %d" % otherover
+    comparison( name + "-comparison", \
+                stats.origsize(), \
+                os.path.getsize(gzname), \
+                datasizec, keyover, hashover, otherover)
+
+    #
+    # Create a graph showing the compression ratio achieved.
+    #
+    compression(name + "-compression", stats.percent_compressed(), stats.total_compression_ratio())
+
+    #
+    # Show a histogram of sharing for the pieces.
+    #
+    histogram(name + "-datahisto", stats.getdatahashes())
+    histogram(name + "-metahisto", stats.getmetahashes())
+
+def comparison( name, originalsize, gzipsize, datasize, keyoverhead, hashoverhead, otheroverhead ):
+    clf()
+
+    ds = bar(2.1, datasize, width=0.8, color='green')
+    ko = bar(2.1, keyoverhead, bottom=datasize, width=0.8, color='yellow')
+    ho = bar(2.1, hashoverhead, bottom=(datasize+keyoverhead), width=0.8, color='purple')
+    oo = bar(2.1, otheroverhead, bottom=(datasize+keyoverhead+hashoverhead), width=0.8, color='orange')
+
+    bar(0.1, originalsize, width=0.8, color='red')
+    bar(1.1, gzipsize, width=0.8, color='blue')
+
+    legend( (ds, ko, ho, oo), ("Data", "Keys", "Metadata", "DB overhead"), loc="best" )
+    ylabel("Bytes")
+    xticks( (0.5, 1.5, 2.5), ("original", "gzip", "SMACHE") )
+    savefig(name + ".pdf", format="pdf")
+
+def compression( name, percentcompressed, totalcompression ):
+    clf()
+
+    #
+    # Show a pie chart for the fraction that are not compressed.
+    #
+    compressed_ratio = (totalcompression - (1.0 - percentcompressed)) / percentcompressed
+    data = [percentcompressed * compressed_ratio, 1.0 - percentcompressed, percentcompressed * (1.0 - compressed_ratio)]
+    pie(data, colors=('green', 'blue', 'white'), labeldistance=0.1)
+    legend(("Compressed", "Uncompressed", "Saved"), loc="best")
+    savefig(name + ".pdf", format="pdf")
+
+def histogram( name, refs ):
+    clf()
+
+    refcounts = map( lambda x: x[2], refs )
+
+    mu, sigma = 100, 15
+    x = mu + sigma*np.random.randn(10000)
+
+    #
+    # Compute a histogram of the references.
+    #
+    n, bins, patches = hist( refcounts, bins=max(refcounts)-min(refcounts), facecolor='green', edgecolor='green', alpha=0.75, label='Chunks' )
+
+    #
+    # For each bin, compute how much was saved in that bin.
+    # (Do some tricks to get two different axes.)
+    #
+    bins.sort()
+    valsu = []
+    valsc = []
+    totalbins     = sum(n)
+    totalsavingsu = 0
+    totalsavingsc = 0
+    for i in range(0, len(bins)):
+        thesesavingsu = sum([ (x[0] - (float(x[0]) / x[2])) for x in refs if x[2] >= bins[i] and (i == len(bins) - 1 or x[2] < bins[i+1]) ])
+        totalsavingsu += thesesavingsu
+        valsu.append(thesesavingsu)
+        thesesavingsc = sum([ (x[1] - (float(x[1]) / x[2])) for x in refs if x[2] >= bins[i] and (i == len(bins) - 1 or x[2] < bins[i+1]) ])
+        totalsavingsc += thesesavingsc
+        valsc.append(thesesavingsc)
+    valsu = map(lambda x: float(x)*totalbins/totalsavingsu, valsu)
+    valsc = map(lambda x: float(x)*totalbins/totalsavingsc, valsc)
+    binwidth = bins[1]-bins[0]
+    plot(bins + float(binwidth)/2, valsu, color='blue', alpha=0.75, label='Relative Savings (no compression)', linewidth=3)
+    plot(bins + float(binwidth)/2, valsc, color='red',  alpha=0.75, label='Relative Savings (compression)', linewidth=3)
+
+    legend( loc="best" )
+    ylabel("Chunk Count")
+    xlabel("References")
+    savefig(name + ".pdf", format="pdf")
 
 if __name__ == "__main__":
     main(sys.argv)

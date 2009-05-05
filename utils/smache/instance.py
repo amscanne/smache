@@ -82,3 +82,11 @@ class Smache:
     def references(self, hash):
         native.smache_parsehash(self.nh, hash)
         return native.smache_info_references(self.sm, self.nh)
+
+    def metahash(self, hash):
+        native.smache_parsehash(self.nh, hash)
+        return native.smache_info_metahash(self.sm, self.nh)
+
+    def compression(self, hash):
+        native.smache_parsehash(self.nh, hash)
+        return native.smache_info_metahash(self.sm, self.nh)

@@ -40,19 +40,22 @@ class Stats:
         db = bsddb.hashopen(filename)
         hashes = db.keys()
         for h in hashes:
-            h  = binascii.hexlify(h)
-            tl = self.instance.totallength(h)
-            l  = self.instance.length(h)
-            r  = self.instance.references(h)
-            if tl == l:
-                target = self.hashes
-            else:
-                target = self.metahashes
+            ah  = binascii.hexlify(h)
+            tl = self.instance.totallength(ah)
+            l  = self.instance.length(ah)
+            r  = self.instance.references(ah)
+            mh = self.instance.metahash(ah)
 
-            if target.has_key(h):
-                target[h][1] = max(r, target[h][2])
+            if mh:
+                target = self.metahashes
             else:
-                target[h] = (l, r)
+                target = self.hashes
+
+            if target.has_key(ah):
+                target[ah][2] = max(r, target[ah][2])
+            else:
+                # Store index as (data length, compressed length, reference count)
+                target[ah] = (l, len(db[h]), r)
 
     def keycount(self):
         return len(self.hashes)
@@ -66,8 +69,43 @@ class Stats:
     def totalsize(self):
         return self.dbsizes
 
-    def datasize(self):
+    def compressed_datasize(self):
+        return sum(map(lambda x: x[1], self.hashes.values()))
+
+    def uncompressed_datasize(self):
         return sum(map(lambda x: x[0], self.hashes.values()))
+
+    def percent_compressed(self):
+        return float(sum(map(lambda x: x[1] < x[0], self.hashes.values()))) / len(self.hashes)
+
+    def total_compression_ratio(self):
+        return float(self.compressed_datasize()) / self.uncompressed_datasize()
+
+    def getdatahashes(self):
+        return self.hashes.values()
+
+    def getmetahashes(self):
+        return self.metahashes.values()
 
     def origsize(self):
         return self.filesizes
+
+    def dump(self):
+        totalsize = self.totalsize()
+        origsize  = self.origsize()
+        datasizec = self.compressed_datasize()
+        datasizeu = self.uncompressed_datasize()
+        keycount  = self.keycount()
+        keyover   = self.keyoverhead()
+        hashover  = self.hashoverhead()
+        otherover = (totalsize - datasizec) - (keyover + hashover)
+
+        print "Original size:             %10d" % origsize
+        print "SMACHE size:               %10d" % totalsize
+        print " Keys:                     %10d" % keycount
+        print " Data size (compressed):   %10d" % datasizec
+        print " Data size (uncompressed): %10d" % datasizeu
+        print " Key overhead:             %10d" % keyover
+        print " Hash overhead:            %10d" % hashover
+        print " Other overhead:           %10d" % otherover
+

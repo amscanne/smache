@@ -170,18 +170,24 @@ void smache_destroy(smache*);
 /*
  * Operations for sending/receiving data.
  */
-int smache_info(smache*, smache_hash*, uint64_t* length, uint64_t* totallength, size_t* references);
+int smache_info(smache*, smache_hash*,
+                unsigned int* metahash, smache_compression_type* compression,
+                uint64_t* length, uint64_t* totallength,
+                size_t* references);
+
 int smache_adjref(smache* instance, smache_hash* hash, int references);
 int smache_get(smache*, smache_hash*, uint64_t offset, void* data, uint64_t* length);
 int smache_put(smache*, smache_hash* rval, void* data, uint64_t length, size_t block_size);
 int smache_delete(smache*, smache_hash*);
 
 /*
- * Convenience functions, do not use special types (on purpose for python bindings..).
+ * Convenience functions, do not use special types (for python bindings...).
  */
 unsigned int smache_info_length(smache*, smache_hash*);
 unsigned int smache_info_totallength(smache*, smache_hash*);
 unsigned int smache_info_references(smache*, smache_hash*);
+unsigned int smache_info_metahash(smache*, smache_hash*);
+unsigned int smache_info_compression(smache*, smache_hash*);
 
 /*
  * Useful functions for sending/receiving files.
