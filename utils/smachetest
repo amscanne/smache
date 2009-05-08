@@ -9,8 +9,8 @@ import md5
 from pylab import *
 
 def usage(args):
-    print "usage: %s <type> <files...>" % (args[0])
-    print "where <type> is one of: fixed, rabin-256, rabin-512, rabin-1024"
+    print "usage: %s <type> <storagepath> <files...>" % (args[0])
+    print "where <type> is one of: fixed, fixed-1024, rabin-256, rabin-512, rabin-1024"
 
 def hashname(files):
     digest = md5.new()
@@ -19,17 +19,19 @@ def hashname(files):
     return digest.hexdigest()
 
 def main(args):
-    if len(args) < 3:
+    if len(args) < 4:
         usage(args)
         return
 
     #
     # Generate a unique (but repeatable) name.
     #
-    name = hashname(args[2:]) + "-" + args[1]
+    name = os.path.join(args[2], hashname(args[3:]) + "-" + args[1])
     indexname = name + ".index"
     dbname    = name + ".db"
     gzname    = name + ".tar.gz"
+
+    print name
 
     #
     # Configure depending on the type.
@@ -46,6 +48,9 @@ def main(args):
     if args[1] == "fixed":
         spec.smache["blockalgo"] = smache.native.SMACHE_FIXED
         spec.smache["blacksize"] = 512
+    elif args[1] == "fixed-1024":
+        spec.smache["blockalgo"] = smache.native.SMACHE_FIXED
+        spec.smache["blacksize"] = 1024
     elif args[1] == "rabin-256":
         spec.smache["blockalgo"] = smache.native.SMACHE_RABIN
         spec.smache["blacksize"] = 256
@@ -64,17 +69,23 @@ def main(args):
     #
     # Add all files that are not in the store.
     #
-    for file in args[2:]:
-        store.add(file, False)
+    count = 0
+    for file in args[3:]:
+        count += store.add(file, False)
     store.index.save()
 
     #
     # Create the tar.gz if necessary.
     #
     if not(os.path.exists(gzname)):
+        count += 1
         gzipargs = ["tar", "-zcvf", gzname]
-        gzipargs.extend(args[2:])
+        gzipargs.extend(args[3:])
         subprocess.call(gzipargs)
+
+    if count > 0:
+        print "Done creating files. Re-run to generate graphs."
+        sys.exit(0)
 
     #
     # Re-create the store object.
@@ -134,7 +145,7 @@ def compression( name, percentcompressed, totalcompression ):
     #
     # Show a pie chart for the fraction that are not compressed.
     #
-    compressed_ratio = (totalcompression - (1.0 - percentcompressed)) / percentcompressed
+    compressed_ratio = (totalcompression - (1.0 - percentcompressed)) / (percentcompressed or 1)
     data = [percentcompressed * compressed_ratio, 1.0 - percentcompressed, percentcompressed * (1.0 - compressed_ratio)]
     pie(data, colors=('green', 'blue', 'white'), labeldistance=0.1)
     legend(("Compressed", "Uncompressed", "Saved"), loc="best")
@@ -143,41 +154,55 @@ def compression( name, percentcompressed, totalcompression ):
 def histogram( name, refs ):
     clf()
 
-    refcounts = map( lambda x: x[2], refs )
-
-    mu, sigma = 100, 15
-    x = mu + sigma*np.random.randn(10000)
+    refcounts  = map( lambda x: x[2], refs )
+  
+    #
+    # Ensure that we have at least two different values.
+    #
+    if len(refcounts) == 0:
+        sys.stderr.write("Skipping histogram, no references.\n")
+        return
+    first = refcounts[0]
+    for i in range(1, len(refcounts)):
+        if not(refcounts[i] == first):
+            break
+        elif i == len(refcounts) - 1:
+            sys.stderr.write("Skipping histogram, all refcounts are %d.\n" % first)
+            return
 
     #
     # Compute a histogram of the references.
     #
-    n, bins, patches = hist( refcounts, bins=max(refcounts)-min(refcounts), facecolor='green', edgecolor='green', alpha=0.75, label='Chunks' )
+    n, bins, patches = hist( refcounts, log=True, bins=max(refcounts)-min(refcounts), facecolor='green', edgecolor='green', alpha=0.75, label='Chunks' )
 
     #
     # For each bin, compute how much was saved in that bin.
     # (Do some tricks to get two different axes.)
     #
-    bins.sort()
-    valsu = []
-    valsc = []
-    totalbins     = sum(n)
-    totalsavingsu = 0
-    totalsavingsc = 0
-    for i in range(0, len(bins)):
-        thesesavingsu = sum([ (x[0] - (float(x[0]) / x[2])) for x in refs if x[2] >= bins[i] and (i == len(bins) - 1 or x[2] < bins[i+1]) ])
-        totalsavingsu += thesesavingsu
-        valsu.append(thesesavingsu)
-        thesesavingsc = sum([ (x[1] - (float(x[1]) / x[2])) for x in refs if x[2] >= bins[i] and (i == len(bins) - 1 or x[2] < bins[i+1]) ])
-        totalsavingsc += thesesavingsc
-        valsc.append(thesesavingsc)
-    valsu = map(lambda x: float(x)*totalbins/totalsavingsu, valsu)
-    valsc = map(lambda x: float(x)*totalbins/totalsavingsc, valsc)
-    binwidth = bins[1]-bins[0]
-    plot(bins + float(binwidth)/2, valsu, color='blue', alpha=0.75, label='Relative Savings (no compression)', linewidth=3)
-    plot(bins + float(binwidth)/2, valsc, color='red',  alpha=0.75, label='Relative Savings (compression)', linewidth=3)
+    # bins.sort()
+    # valsu = [0] * len(bins)
+    # valsc = [0] * len(bins)
+    # totalbins     = sum(n)
+    # totalsavingsu = 0
+    # totalsavingsc = 0
+    # firstbin = bins[0]
+    # binwidth = bins[1]-bins[0]
+    # for x in refs:
+    #      idx = int((x[2] - firstbin)/binwidth)
+    #     thesesavingsu = (x[0] - (float(x[0]) / (x[2] or 1)))
+    #     totalsavingsu += thesesavingsu
+    #     valsu[idx]    += thesesavingsu
+    #     thesesavingsc = (x[1] - (float(x[1]) / (x[2] or 1)))
+    #     totalsavingsc += thesesavingsc
+    #     valsc[idx]    += thesesavingsc
+    # valsu = map(lambda x: float(x)*totalbins/(totalsavingsu or 1), valsu)
+    # valsc = map(lambda x: float(x)*totalbins/(totalsavingsc or 1), valsc)
+    # plot(bins + float(binwidth)/2, valsu, color='blue', alpha=0.75, label='Relative Savings (no compression)', linewidth=3)
+    # plot(bins + float(binwidth)/2, valsc, color='red',  alpha=0.75, label='Relative Savings (compression)', linewidth=3)
+    # legend( loc="best" )
 
-    legend( loc="best" )
-    ylabel("Chunk Count")
+    ylabel("Chunk Count (log)")
+    ylim(min=1)
     xlabel("References")
     savefig(name + ".pdf", format="pdf")
 

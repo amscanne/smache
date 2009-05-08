@@ -142,6 +142,7 @@ _smache_put(smache* instance, smache_hash* hash, smache_chunk* chunk, int adjref
                     exit(1);
                 }
                 sc_chunk->references += adjrefs;
+                backends->current->put(backends->current, hash, sc_chunk);
             }
             else
             {
@@ -524,7 +525,8 @@ smache_put_flags(smache* instance, smache_hash* hash, void* data, uint64_t lengt
         ARROWS();
         SMACHE_DEBUG(instance, "Original data length is %ld.\n", (long)chunks->length);
         smache_compress(chunk, chunks->data, chunks->length, instance->compression_type);
-        chunk->metahash = (depth > 0);
+        chunk->references = 0;
+        chunk->metahash   = (depth > 0);
         ARROWS();
         SMACHE_DEBUG(instance, "Compressed data length is %ld.\n", (long)chunk->length);
 

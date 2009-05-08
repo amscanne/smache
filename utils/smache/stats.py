@@ -38,8 +38,12 @@ class Stats:
 
     def builddbstats(self, filename):
         db = bsddb.hashopen(filename)
-        hashes = db.keys()
-        for h in hashes:
+        try:
+            h = db.first()[0]
+        except:
+            return
+
+        while True:
             ah  = binascii.hexlify(h)
             tl = self.instance.totallength(ah)
             l  = self.instance.length(ah)
@@ -56,6 +60,11 @@ class Stats:
             else:
                 # Store index as (data length, compressed length, reference count)
                 target[ah] = (l, len(db[h]), r)
+
+            try:
+                h = db.next()[0]
+            except:
+                break
 
     def keycount(self):
         return len(self.hashes)
@@ -76,10 +85,10 @@ class Stats:
         return sum(map(lambda x: x[0], self.hashes.values()))
 
     def percent_compressed(self):
-        return float(sum(map(lambda x: x[1] < x[0], self.hashes.values()))) / len(self.hashes)
+        return float(sum(map(lambda x: x[1] < x[0], self.hashes.values()))) / (len(self.hashes) or 1)
 
     def total_compression_ratio(self):
-        return float(self.compressed_datasize()) / self.uncompressed_datasize()
+        return float(self.compressed_datasize()) / (self.uncompressed_datasize() or 1)
 
     def getdatahashes(self):
         return self.hashes.values()

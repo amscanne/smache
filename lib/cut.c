@@ -11,6 +11,7 @@
 #define PRIME_BASE  257
 #define PRIME_MOD   1000000007
 #define WINDOW_SIZE 32
+#define USE_ROLLING_WINDOW
 
 /*
  * The large and small bounds for hashes and implicit,
@@ -54,6 +55,19 @@ smache_chunk_fixed(void* data, size_t length, size_t* count, size_t block_length
     return first.next;
 }
 
+static long long
+rabin_karp(char* data, size_t length)
+{
+    long long hash = 0;
+    int i = 0;
+    for (i = 0; i < length; i++)
+    {
+        hash = hash*PRIME_BASE + data[i];
+        hash %= PRIME_MOD;
+    } 
+    return hash;
+}
+
 struct chunklist*
 smache_chunk_rabin(void* data, size_t length, size_t* count, size_t block_length)
 {
@@ -68,35 +82,42 @@ smache_chunk_rabin(void* data, size_t length, size_t* count, size_t block_length
      * function.  But it's not too computational expense,
      * since we have a fixed, short window size.
      */
-    long long power = 1;
     int i = 0;
-    for (i = 0; i < WINDOW_SIZE; i++)
+    #ifdef USE_ROLLING_WINDOW
+    long long power = 1;
+    for (i = 0; i <= WINDOW_SIZE; i++)
     {
-        power = (power * PRIME_BASE) % PRIME_MOD;
+        power = power*PRIME_BASE;
+        power %= PRIME_MOD;
     }
+    #endif
 
     int lasti = 0;
-    long long hash;
+    long long hash = 0;
     for (i = 0; i < length; i++)
     {
+        #ifdef USE_ROLLING_WINDOW
         /*
          * Add the next character to the window.
          */
-        hash = (hash*PRIME_BASE + ((char*)data)[i]) % PRIME_MOD;
+        hash = hash*PRIME_BASE + ((char*)data)[i];
+        hash %= PRIME_MOD;
 
         /*
          * Remove the first character if necessary.
          */
-        if ( i > length )
+        if ( i > WINDOW_SIZE )
         {
-            hash -= (power * ((char*)data)[i-length] % PRIME_MOD);
-            if( hash < 0 ) hash += PRIME_MOD;
+            hash = (hash - (power * ((char*)data)[i-WINDOW_SIZE-1])) % PRIME_MOD;
         }
+        #else
+        hash = rabin_karp(&(((char*)data)[i-(i <= WINDOW_SIZE ? i : (WINDOW_SIZE+1))]), i <= WINDOW_SIZE ? i : WINDOW_SIZE);
+        #endif
 
         /*
          * Check for cut point.
          */
-        if (hash % block_length == 0)
+        if ( ((hash % block_length == 0) && (i-lasti >= PATH_SMALL)) || (i-lasti >= PATH_LARGE) )
         {
             (*count)++;
             rval->next   = malloc(sizeof(struct chunklist));
@@ -106,6 +127,7 @@ smache_chunk_rabin(void* data, size_t length, size_t* count, size_t block_length
             rval->next = NULL;
             lasti = i;
         }
+
     }
 
     /*
