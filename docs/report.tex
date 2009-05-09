@@ -1,5 +1,6 @@
 \documentclass{article}[12pt]
 \usepackage{amsmath}
+\usepackage{graphicx}
 \usepackage{verbatim}
 \usepackage{fullpage}
 \begin{document}
@@ -8,11 +9,10 @@
 \pagestyle{plain}
 
 \author{Adin Scannell}
-% \date{\today}
 \title{SMACHE: Space-efficient Caching for Self-Similar Data}
 \maketitle
 
-\section*{Introduction}
+\section{Introduction}
 
 Scientific applications are on the verge of generating enough data to overwhelm
 existing computing paradigms.  For example, next generation sequencing
@@ -66,8 +66,8 @@ context before.  In both SnowFlock and paradigms such as Map-Reduce, caching is
 necessarily used to ensure that the costs of transferring data and computation
 between nodes is minimized.
 
-\section*{Proposal}
-\label{sec:proposal}
+\section{Insight and Design}
+\label{sec:insight}
 
 Several protocols exist for efficiently transferring data from a remote site
 when {\em partial} information already exists locally.  A famous example of
@@ -135,7 +135,8 @@ overhead.  However, smaller blocks increase potential savings due to repeated
 sequences.  A key challenge in the design of the system will be the evaluation
 of system parameters such as {\em mean block size}.
 
-\subsection*{Goals}
+\subsubsection{Goals}
+\label{sec:goals}
 
 Biological data shows a high degree of self similarity, which has been used
 effectively to compress far beyond 2 bits per base-pair~\cite{biosequence}.
@@ -177,19 +178,44 @@ random access semantics, i.e. if one compresses ten sequences together then it
 is often necessary to extract all ten before extracting the last one.  This is
 simply due to the nature of many compression algorithms.
 
-\newpage
-\section*{Implementation Plan}
+\section{Implementation}
+\label{sec:implementation}
 
 This intention of this project is to construct a useful building block on which
 future cloud computing tools and infrastructure may be based.  Thus the primary
 output will be a simple shared library, {\tt libsmache}, which provides simple
 access to cached and uncached data using client and server semantics.
 
+\begin{figure}
+\begin{center}
+\includegraphics[width=5.5in]{algo}
+\caption{The algorithm used for storing data.}
+\label{fig:algo}
+\end{center}
+\end{figure}
+
 A simple utility {\tt smachezip} will be built on top of this shared library,
 which given a set of binary data will construct or extract a cache.  This is
 tool which will be used to evaluate the effectiveness of the cache.
 
-\section*{Evaluation Plan}
+\begin{figure}
+\begin{center}
+\includegraphics[width=5.5in]{tree}
+\caption{An example data tree.}
+\label{fig:tree}
+\end{center}
+\end{figure}
+
+\section{Evaluation}
+\label{sec:evaluation}
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=5.5in]{tree}
+\caption{An example data tree.}
+\label{fig:tree}
+\end{center}
+\end{figure}
 
 We intend to generate caches containing sets of data and measure the total size
 of the cache, including all data and metadata.  This total size gives an
@@ -232,7 +258,8 @@ Unrelated    & \parbox{2in}{Multiple arbitrary genomes.} & \parbox{2in}{Multiple
 Similarly, we intend to evaluate the choice of parameters as described in the
 {\em Proposal} section.  This may be done for one or all of the data sets.
 
-\section*{Summary}
+\section{Conclusion}
+\label{sec:conclusion}
 
 Cloud and cluster computing is an important factor in tackling big data
 problems.  Systems support for cluster programming paradigms such as Map-Reduce
