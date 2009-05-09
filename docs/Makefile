@@ -1,10 +1,10 @@
 #!/usr/bin/make -f
 
-proposal.pdf: proposal.tex bio.bib
-	pdflatex proposal
-	pdflatex proposal
-	bibtex   proposal
-	pdflatex proposal
+report.pdf: report.tex bio.bib
+	pdflatex report
+	pdflatex report
+	bibtex   report
+	pdflatex report
 
 clean:
 	rm -f *.log *.aux *.pdf
