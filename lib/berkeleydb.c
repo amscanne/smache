@@ -156,7 +156,6 @@ smache_backend* smache_berkeleydb_backend(const char* filename)
         return NULL;
     }
 
-    dbp->set_flags(dbp, DB_TXN_NOT_DURABLE);
     dbp->set_errfile(dbp, stderr);
     rval = dbp->open(dbp, NULL, filename, NULL, DB_HASH, DB_CREATE, 0644);
     if( rval ) 

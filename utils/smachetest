@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
-import smache
 import sys
 import os
 import subprocess
 import stat
 import md5
 from pylab import *
+import smache
 
 def usage(args):
     print "usage: %s <type> <storagepath> <files...>" % (args[0])
@@ -72,7 +72,6 @@ def main(args):
     count = 0
     for file in args[3:]:
         count += store.add(file, False)
-    store.index.save()
 
     #
     # Create the tar.gz if necessary.

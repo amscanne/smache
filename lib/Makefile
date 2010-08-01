@@ -3,7 +3,7 @@
 LIBRARY=libsmache.so
 OBJECTS=berkeleydb.o memcached.o protocol.o smache.o misc.o files.o hash.o compress.o cut.o
 CFLAGS:=-Wall -g -fPIC -I../include -I/opt/local/include
-LIBFLAGS:=-lc -llzo2 -lmhash -ldb-4.4
+LIBFLAGS:=-lc -llzo2 -lmhash -ldb
 LDFLAGS:=-g -L/opt/local/lib -L/opt/local/lib/db44 $(LIBFLAGS)
 CC:=gcc
 

@@ -23,16 +23,15 @@ import sys
 
 class BaseStat(fuse.Stat):
     def __init__(self):
-        self.st_mode  = 0
-        self.st_ino   = 0
-        self.st_dev   = 0
-        self.st_nlink = 0
-        self.st_uid   = 0
-        self.st_gid   = 0
-        self.st_size  = 0
-        self.st_atime = 0
-        self.st_mtime = 0
-        self.st_ctime = 0
+        fuse.Stat.__init__(self)
+        self.st_atime = int(time())
+        self.st_mtime = self.st_atime
+        self.st_ctime = self.st_atime
+        self.st_nlink = 1
+        self.st_size  = 4096
+        # self.st_ino   = 0
+        # self.st_dev   = 0
+
     def __str__(self):
         return "Mode: %o Ino: %d Dev: %d Nlink: %d Uid: %d Gid: %d Size: %d Atime: %d Mtime: %d Ctime: %d" % \
             (int(self.st_mode), int(self.st_ino), int(self.st_dev), int(self.st_nlink), \
@@ -58,7 +57,7 @@ class FS(Fuse):
         # Take care of the case of a directory.
         #
         if not(path) or path in self.dirs:
-            st.st_nlink = 2
+            st.st_nlink = 2 + len(self.listdir(path))
             st.st_mode  = stat.S_IFDIR | 0755
             return st
 
@@ -83,7 +82,6 @@ class FS(Fuse):
         # Take all the stat settings from the index.
         #
         st.st_mode  = self.store.index.mode(realname)
-        st.st_nlink = 1
         st.st_size  = self.store.length(realname)
         st.st_uid   = self.store.index.uid(realname)
         st.st_gid   = self.store.index.gid(realname)
@@ -91,6 +89,7 @@ class FS(Fuse):
         st.st_mtime = self.store.index.mtime(realname)
         st.st_ctime = self.store.index.ctime(realname)
 
+        print str(st)
         return st
 
     def normedfiles(self):
@@ -118,35 +117,36 @@ class FS(Fuse):
     # Built up a list of matching files.
     #
     def readdir(self, path, offset):
+        for f in self.listdir(path):
+            yield fuse.Direntry(f)
+
+    def listdir(self, path):
         path  = os.path.normpath(path)
         while len(path) > 0 and path[0] == '/':
             path = path[1:]
 
-        files = {'.':True, '..':True}
+        files = ['.', '..']
         for f in self.files:
-            if os.path.dirname(f) == path:
-                files[os.path.basename(f)] = True
+            (head, tail) = os.path.split(f)
+            if not(tail in files) and head == path:
+                files.append(tail)
         for f in self.dirs:
-            if os.path.dirname(f) == path:
-                files[os.path.basename(f)] = True
+            (head, tail) = os.path.split(f)
+            if not(tail in files) and head == path:
+                files.append(tail)
 
-        for r in files.keys():
-            yield fuse.Direntry(r)
-
+        return files
+        
     def open(self, path, flags):
         path = os.path.normpath(path)
         while len(path) > 0 and path[0] == '/':
             path = path[1:]
 
         if not(path in self.dirs) and not(path in self.files):
-            f.write("Not found.\n")
-            f.close()
             return -errno.ENOENT
 
         accmode = os.O_RDONLY | os.O_WRONLY | os.O_RDWR
         if (flags & accmode) != os.O_RDONLY:
-            f.write("Not allowed.\n")
-            f.close()
             return -errno.EACCESS
 
         return 0

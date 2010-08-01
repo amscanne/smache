@@ -6,6 +6,7 @@ import sys
 import os
 import re
 import stat
+import shelve
 
 #
 # This class defines a simple index of files.
@@ -17,34 +18,7 @@ import stat
 class Index:
     def __init__(self, filename):
         self.filename = filename
-        self.load()
-
-    def load(self):
-        self.index = dict()
-        try:
-            f = open(self.filename, "r")
-            for l in f.readlines():
-                m = re.match("([^#]*)#.*", l)
-                if m:
-                    l = m.group(1)
-                try:
-                    (hash, mode, uid, gid, atime, mtime, ctime, filename) = l.split(' ', 8)
-                except:
-                    continue
-                filename = filename.rstrip()
-                self.index[filename] = (hash, int(mode, 8), int(uid), int(gid), int(atime), int(mtime), int(ctime))
-            f.close()
-        except:
-            pass
-
-    def save(self):
-        f = open(self.filename, "w")
-        f.write("# hash mode uid gid atime mtime ctime filename\n")
-        for k in self.index.keys():
-            (hash, mode, uid, gid, atime, mtime, ctime) = self.index[k]
-            f.write("%s %o %d %d %d %d %d %s\n" % (hash, mode, uid, gid, atime, mtime, ctime, k))
-            f.flush()
-        f.close()
+        self.index    = shelve.open(filename)
 
     def list(self):
         return self.index.keys()
@@ -98,9 +72,8 @@ class Index:
             os.makedirs(dirname, mode=0777)
         (hash, mode, uid, gid, atime, mtime, ctime) = self.index[file]
         sm.getfile(hash, file)
-        os.chmod(file, perms)
-        os.chown(file, uid)
-        os.chgrp(file, gid)
+        os.chmod(file, mode)
+        os.chown(file, uid, gid)
         os.utime(file, (atime, mtime))
         return 1
 

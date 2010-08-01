@@ -38,7 +38,5 @@ def main(args):
         for f in store.index.list():
             print f
 
-    store.index.save()
-
 if __name__ == "__main__":
     main(sys.argv)

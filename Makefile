@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-all: lib utils
+all: lib utils sanity
 
 install: 
 	(cd lib && make install)
@@ -10,6 +10,7 @@ install:
 clean:
 	(cd lib && make clean)
 	(cd utils && make clean)
+	rm sanity.*
 
 lib:
 	(cd lib && make)
@@ -17,4 +18,7 @@ lib:
 utils:
 	(cd utils && make)
 
-.PHONY: all install clean lib utils
+sanity:
+	bash run-sanity
+
+.PHONY: all install clean lib utils sanity
