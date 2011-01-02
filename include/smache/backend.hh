@@ -5,6 +5,7 @@
 #ifndef _BACKEND_HH_
 #define _BACKEND_HH_
 
+#include <list>
 #include <map>
 
 class Backend;
@@ -29,6 +30,7 @@ public:
     virtual uint64_t countMeta() = 0;
     virtual uint64_t countIndex() = 0;
 };
+typedef std::list<Backend*> BackendList;
 
 class BackendPool {
 protected:
@@ -41,8 +43,9 @@ public:
         this->buckets[bucket] = backend;
     }
 
-    Backend* closest(Hash key, unsigned int n)
+    BackendList* closest(Hash key, unsigned int n)
     {
+        BackendList* rval = new BackendList();
         buckets_t::const_iterator it = this->buckets.lower_bound(key);
 
         // Wrap around if necessary.
@@ -61,10 +64,11 @@ public:
             if( it == this->buckets.end() ) {
                 it = this->buckets.begin();
             }
+            rval->push_back(it->second);
             n--;
         }
 
-        return it->second;
+        return rval;
     }
 
     void remove(Hash bucket)

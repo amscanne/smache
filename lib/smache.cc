@@ -4,6 +4,9 @@
 
 #include <smache/smache.hh>
 
+    BackendPool backends;
+    WorkPool work;
+
 Smache::Smache(uint32_t _r, uint32_t _w, uint32_t _n, Chunker* _chunker) : r(_r), w(_w), n(_n), chunker(_chunker)
 {
 }

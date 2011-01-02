@@ -21,6 +21,16 @@ typedef unsigned long long uint64_t;
     }
 }
 
+%typemap(out) BackendList* {
+    $result = PyList_New($1->size());
+    int i = 0;
+    for( BackendList::const_iterator it = $1->begin(); it != $1->end(); it++ ) {
+        PyObject* obj = SWIG_NewPointerObj(SWIG_as_voidptr(*it), SWIGTYPE_p_Backend, SWIG_POINTER_NEW | 0 );
+        SwigPyObject_disown(obj);
+        PyList_SetItem($result, i++, obj);
+    }
+}
+
 %typemap(in) unsigned char* {
     $1 = (unsigned char*)PyString_AsString($input);
 }
@@ -29,5 +39,6 @@ typedef unsigned long long uint64_t;
 %include "smache/log.hh"
 %include "smache/chunk.hh"
 %include "smache/cas.hh"
+#include "smache/backend.hh"
 %include "smache/store.hh"
 %include "smache/smache.hh"
