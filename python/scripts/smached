@@ -4,6 +4,7 @@ import os
 import sys
 import getopt
 
+sys.path.append("/usr/share/pyshared")
 import smache
 
 def usage():

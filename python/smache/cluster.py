@@ -5,24 +5,22 @@ import time
 import threading
 import time
 
+import buckets
 from log import log
 
 class Host:
     address   = None
     port      = None
-    timestamp = None
+    timestamp = time.time()
 
-    def __init__(self, address, port):
-        self.address = address
-        self.port    = port
-
-    def update(self, buckets):
+    def __init__(self, url):
+        (self.address, self.port) = url.split(":", 1)
 
 class ClusterManager(threading.Thread):
     r      = None
     w      = None
     n      = None
-    seeds  = []
+    hosts  = []
     stores = []
     smache = None
 
@@ -32,7 +30,7 @@ class ClusterManager(threading.Thread):
         self.r = r
         self.w = w
         self.n = n
-        self.seeds  = seeds  
+        self.hsots = map(Host, seeds)
         self.stores = stores
         self.smache = smache
 

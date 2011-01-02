@@ -46,5 +46,5 @@ def go(config):
     cluster.start()
 
     # Run the server.
-    server = Server(instance, cluster, config.server.address, config.server.port)
-    server.run()
+    server = Server(instance, cluster)
+    server.run(config.server.address, config.server.port)

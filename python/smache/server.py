@@ -46,6 +46,11 @@ class ClusterInfoPath(PathHandler):
         PathHandler.__init__(self, handler)
         self.cluster = cluster
 
+    # Not provided:
+    # head: error
+    # delete: error
+    # put: error
+
     # Dump all the cluster information.
     def get(self, path):
         self.handler.OK()
@@ -55,10 +60,6 @@ class ClusterInfoPath(PathHandler):
     def post(self, path):
         self.handler.OK()
         self.cluster.load(self.handler.wfile)
-
-    # head: error
-    # delete: error
-    # put: error
 
 class ChunkPath(ClusterInfoPath):
     smache = None
@@ -83,8 +84,12 @@ class ChunkPath(ClusterInfoPath):
             r = self.handler.headers['Content-Range']
             h = Hash(path)
             c = self.smache.info(h)
-            self.handler.OK(headers = {'Content-Length' : )
-            self.smache.read(h, self.handler.wfile.fileno(), r, l)
+            if c:
+                headers = { 'Content-Length': c.length(), 
+                            'References' : c.references(),
+                            'Type' : c.blocktype() }
+                self.handler.OK(headers)
+                self.smache.read(h, self.handler.wfile.fileno(), r, l)
 
     # Grab the meta information for a hash.
     def head(self, path):
@@ -172,13 +177,16 @@ class IndexPath(PathHandler):
         PathHandler.__init__(self, handler)
         self.smache = smache
 
+    # Not provider:
+    # head: error
+
     # Lookup an index key (using redirect for convenience).
     def get(self, path):
         if path == '':
             self.handler.OK()
             self.cluster.listIndices(self.wfile)
         else:
-            h = self.smache.lookup(path):
+            h = self.smache.lookup(path)
             if h:
                 self.nandler.redirect('/chunks/%s' % str(h))
             else:
@@ -216,12 +224,9 @@ class IndexPath(PathHandler):
             else:
                 self.handler.error()
 
-    # head: error
+class Server:
 
-class Server(Host):
-
-    def __init__(self, smache, cluster, address, port):
-        Host.__init__(self, address, port)
+    def __init__(self, smache, cluster):
         self.HttpHandler.smache = smache
         self.HttpHandler.cluster = cluster
 
@@ -233,16 +238,20 @@ class Server(Host):
             # Check for a cluster info request.
             if self.path == '/':
                 h = ClusterInfoPath(self, self.cluster)
+                log(" path %s -> cluster(%s)" % (self.path, self.path[1:]))
                 return (h, self.path[1:])
 
             # Check for a chunk or index request.
-            m = re.match("/(chunks|index)/(.*)")
+            m = re.match("/(chunks|index)/(.*)", self.path)
             if not(m):
                 # The default path handler will error.
+                log(" path %s -> error(%s)" % (self.path, self.path[1:]))
                 return (PathHandler(self), self.path[1:])
             if m.group(1) == "chunks":
+                log(" path %s -> chunks(%s)" % (self.path, m.group(2)))
                 return (ChunkPath(self, self.cluster, self.smache), m.group(2))
             elif m.group(1) == "index":
+                log(" path %s -> index(%s)" % (self.path, m.group(2)))
                 return (IndexPath(self, self.smache), m.group(2))
 
         def OK(self, headers = {}):
@@ -265,11 +274,12 @@ class Server(Host):
             self.send_response(404)
             self.end_headers()
 
-        def error(self, msg):
+        def error(self, msg = None):
             self.send_response(500)
             self.send_header("Content-type", "text/plain")
             self.end_headers()
-            self.wfile.write(msg)
+            if msg:
+                self.wfile.write(msg)
 
         def do_GET(self):
             (h, p) = self.forpath()
@@ -291,10 +301,10 @@ class Server(Host):
             (h, p) = self.forpath()
             h.delete(p)
 
-    def run(self):
+    def run(self, address, port):
         clz = self.HttpHandler
         log("Server running...")
-        log(" address = %s" % str(self.address))
-        log(" port = %d" % self.port)
-        httpd = BaseHTTPServer.HTTPServer((self.address, self.port), clz)
+        log(" address = %s" % str(address))
+        log(" port = %d" % port)
+        httpd = BaseHTTPServer.HTTPServer((address, port), clz)
         httpd.serve_forever()
