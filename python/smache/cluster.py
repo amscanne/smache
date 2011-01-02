@@ -33,9 +33,9 @@ class ClusterManager(threading.Thread):
         return []
 
     def run(self):
-        sys.stderr.write("Cluster manager running...\n")
-        sys.stderr.write(" r = %d, w = %d, n = %d\n" % (self.r, self.w, self.n))
-        sys.stderr.write(" seeds = %s\n" % str(self.seeds))
-        sys.stderr.write(" stores = %s\n" % str(self.stores))
+        log("Cluster manager running...")
+        log(" r = %d, w = %d, n = %d" % (self.r, self.w, self.n))
+        log(" seeds = %s" % str(self.seeds))
+        log(" stores = %s" % str(self.stores))
         while True:
             time.sleep(1.0)

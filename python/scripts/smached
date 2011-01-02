@@ -7,11 +7,13 @@ import getopt
 import smache
 
 def usage():
-    sys.stderr.write("usage: %s [--log=<file>] [--verbose] [--help] <config>\n" % sys.argv[0])
+    sys.stderr.write("usage: %s [--log=<file>] [--verbose] [--help] <config>\n" % \
+                      sys.argv[0])
 
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "l:vh", ["log=", "verbose", "help"])
+        opts, args = getopt.getopt(sys.argv[1:], \
+                                   "l:vh", ["log=", "verbose", "help"])
     except getopt.GetoptError, err:
         print str(err)
         usage()

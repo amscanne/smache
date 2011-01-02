@@ -9,6 +9,7 @@ from smache import *
 from server import *
 from cluster import *
 from exceptions import *
+from log import log
 
 from config import Config
 
@@ -16,7 +17,7 @@ from native import setLogLevel, getLogLevel
 
 def go(config):
     # Print an initial welcome.
-    sys.stderr.write("Starting...\n")
+    log("Starting...\n")
 
     # Create the CAS splitter based on algo and blocksize.
     if config.smache.algo == "rabin":
@@ -37,7 +38,7 @@ def go(config):
     stores = []
     for s in config.stores.items():
         store = Store(s[1])
-        sys.stderr.write(" store %s -> %s\n" % (s[0], str(store)))
+        log(" store %s -> %s\n" % (s[0], str(store)))
         stores.append(store)
 
     # Create the cluster manager (detects hosts, etc.).

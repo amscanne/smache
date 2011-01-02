@@ -2,3 +2,5 @@
 
 update-rc.d smached defaults
 /etc/init.d/smached force-reload
+ln -s /usr/lib/pyshared/python2.6/smache/_native.so \
+      /usr/share/pyshared/smache/_native.so

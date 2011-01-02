@@ -5,6 +5,7 @@ import time
 import re
 import BaseHTTPServer
 
+from log import log
 from smache import *
 from cluster import *
 
@@ -41,17 +42,20 @@ class Server:
                 self.send_header("Content-type", "text/plain")
                 self.end_headers()
                 for h in self.cluster.hosts():
-                    self.wfile.write("%s %s\n" % (h.address, h.timestamp, buckethash(h.buckets)))
-
-                # Grab our own name and timestamp.
+                    self.wfile.write("%s\n" % h)
+                # Grab our own name.
                 addr = self.connection.getsockname()
                 self.wfile.write("%s:%d\n" % (addr[0], addr[1]))
 
             elif re.match("/data/(.*)", self.path):
-                pass
+                self.send_response(200)
+                self.send_header("Content-type", "text/html")
+                self.end_headers()
 
             elif re.match("/index/(.*)", self.path):
-                pass
+                self.send_response(200)
+                self.send_header("Content-type", "text/html")
+                self.end_headers()
 
             else:
                 self.send_response(500)
@@ -64,6 +68,9 @@ class Server:
                 self.end_headers()
                 self.wfile.write("<html></html>")
             elif re.match("/index/(.*)", self.path):
+                self.send_response(200)
+                self.send_header("Content-type", "text/html")
+                self.end_headers()
             else:
                 self.send_response(500)
                 self.end_headers()
@@ -74,6 +81,9 @@ class Server:
                 self.send_header("Content-type", "text/html")
                 self.end_headers()
             elif re.match("/index/(.*)", self.path):
+                self.send_response(200)
+                self.send_header("Content-type", "text/html")
+                self.end_headers()
             else:
                 self.send_response(500)
                 self.end_headers()
@@ -85,6 +95,9 @@ class Server:
                 self.end_headers()
                 self.wfile.write("<html></html>")
             elif re.match("/index/(.*)", self.path):
+                self.send_response(200)
+                self.send_header("Content-type", "text/html")
+                self.end_headers()
             else:
                 self.send_response(500)
                 self.end_headers()
@@ -96,6 +109,9 @@ class Server:
                 self.end_headers()
                 self.wfile.write("<html></html>")
             elif re.match("/index/(.*)", self.path):
+                self.send_response(200)
+                self.send_header("Content-type", "text/html")
+                self.end_headers()
             else:
                 self.send_response(500)
                 self.end_headers()
@@ -108,8 +124,8 @@ class Server:
 
     def run(self):
         clz = self.HttpHandler
-        sys.stderr.write("Server running...\n")
-        sys.stderr.write(" address = %s\n" % str(self.address))
-        sys.stderr.write(" port = %d\n" % self.port)
+        log("Server running...")
+        log(" address = %s" % str(self.address))
+        log(" port = %d" % self.port)
         httpd = BaseHTTPServer.HTTPServer((self.address, self.port), clz)
         httpd.serve_forever()

@@ -1,4 +1,5 @@
 #!/bin/bash
 
+rm -f /usr/share/pyshared/smache/_native.so
 [ -x /etc/init.d/smached ] && /etc/init.d/smached stop
 update-rc.d -f smached remove
