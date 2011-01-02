@@ -1,0 +1,14 @@
+                                  README
+
+Smache is a content-addressable storage system, originally done for a
+computational biology course project.  I've since begun work on rewriting it to
+distribute data (implementing quorum, etc.) as a bit of an exercise.
+
+The intent is to maximize distribution of data (so that we can in turn,
+maximumize the number of disks that spin up when you need a piece).  Unlike
+other systems (map-reduce), I feel that the most reasonable fundamental
+assumption that can be made for these systems moving forward is that the
+network is going to be many orders of magnitude speedier than any storage
+system.  Looking at the commoditization of technologies such as quad-rate IB,
+this is likely to be true even in the face of advancements in solid-state
+storage.
