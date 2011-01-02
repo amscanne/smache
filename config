@@ -18,10 +18,12 @@
 # w = 2
 
 [seeds]
+# examples:
 # one = 10.0.0.1:10000
 # two = 10.0.0.2:10000
 
 [stores]
+# examples:
 # one = /mnt/disk1/
 # two = /mnt/disk2/
 tmp = /tmp/

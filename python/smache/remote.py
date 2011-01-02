@@ -5,21 +5,9 @@ import random
 
 import native
 from chunks import *
+from buckets import *
 from exceptions import *
 from constants import *
-
-
-class BucketMap:
-    buckets = []
-
-    def add(self, bucket):
-        self.buckets.append(bucket)
-
-    def remove(self, bucket):
-        self.buckets.remove(bucket)
-
-    def all(self):
-        return self.buckets[:]        
 
 class Remote(native.Remote):
     buckets = None
@@ -27,7 +15,7 @@ class Remote(native.Remote):
     def __init__(self, address):
         native.Remote(self)
         self.address = address
-        self.buckets = BucketMap()
+        self.buckets = Buckets()
 
     #
     # The following are over-riden and called from the
@@ -116,3 +104,6 @@ class Remote(native.Remote):
 
     def countMeta(self):
         return 0
+
+    def __str__(self):
+        return "[buckets=%d]" % (self.buckets.size())

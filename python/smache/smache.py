@@ -12,38 +12,35 @@ class Smache(native.Smache):
         native.Smache.__init__(self, r, w, n, cas)
         self.compression = compression        
 
+    def info(self, h):
+        return Chunk(self.dinfo(h))
+
     def create(self, fd, offset, length):
-        # h = self.dcreate(fd, offset, length)
-        pass
+        return Hash(self.dcreate(fd, offset, length))
     
     def append(self):
-        # h = self.dappend(fd, length)
-        pass
+        return Hash(self.dappend(fd, length))
     
     def read(self):
-        # b = self.dread(h, fd, offset, length)
-        pass
+        return self.dread(h, fd, offset, length)
     
     def write(self):
-        # h = self.dwrite(h, fd, offset, length)
-        pass
+        return self.dwrite(h, fd, offset, length)
     
     def remove(self, h):
-        # h = self.dremove(h, offset, length)
-        pass
+        return Hash(self.dremove(h, offset, length))
     
     def truncate(self, h, length):
-        # h = self.dtruncate(h, length)
-        pass
+        return Hash(self.dtruncate(h, length))
     
     def map(self, n, h):
-        # b = self.imap(n, h)
-        pass
+        return self.imap(n, h)
+
+    def lookup(self, n):
+        return Hash(self.ilookup(n))
 
     def remap(self, n, h):
-        # b = self.iremap(n, h)
-        pass
+        return self.iremap(n, h)
 
     def unmap(self, n):
-        # b = self.iunmap(n)
-        pass
+        return self.iunmap(n)

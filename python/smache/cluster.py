@@ -3,8 +3,20 @@
 import sys
 import time
 import threading
+import time
 
 from log import log
+
+class Host:
+    address   = None
+    port      = None
+    timestamp = None
+
+    def __init__(self, address, port):
+        self.address = address
+        self.port    = port
+
+    def update(self, buckets):
 
 class ClusterManager(threading.Thread):
     r      = None
@@ -23,6 +35,24 @@ class ClusterManager(threading.Thread):
         self.seeds  = seeds  
         self.stores = stores
         self.smache = smache
+
+    def save(self, o):
+        pass
+
+    def load(self, i):
+        pass
+
+    def listAll(self):
+        pass
+
+    def listData(self):
+        pass
+
+    def listMeta(self):
+        pass
+
+    def listIndices(self):
+        pass
 
     def buckets(self):
         rval = []

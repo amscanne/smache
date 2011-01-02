@@ -29,7 +29,8 @@ public:
     ~Smache();
 
     // Data manipulation.
-    Hash dcreate(int fd, uint64_t offset, uint64_t length);
+    Chunk* dinfo(Hash key);
+    Hash dcreate(int fd, uint64_t length);
     Hash dappend(int fd, uint64_t length);
     bool dread(Hash key, int fd, uint64_t offset, uint64_t length);
     Hash dwrite(Hash key, int fd, uint64_t offset, uint64_t length);
@@ -38,6 +39,7 @@ public:
 
     // Index manipulation.
     bool imap(const char* name, Hash key);
+    Hash ilookup(const char* name);
     bool iremap(const char* name, Hash key);
     bool iunmap(const char* name);
 };

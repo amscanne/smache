@@ -12,7 +12,12 @@ Smache::~Smache()
 {
 }
 
-Hash Smache::dcreate(int fd, uint64_t offset, uint64_t length)
+Chunk* Smache::dinfo(Hash key)
+{
+    return new Chunk();
+}
+
+Hash Smache::dcreate(int fd, uint64_t length)
 {
     return Hash();
 }
@@ -45,6 +50,11 @@ Hash Smache::dtruncate(Hash key, uint64_t length)
 bool Smache::imap(const char* name, Hash key)
 {
     return false;
+}
+
+Hash Smache::ilookup(const char* name)
+{
+    return Hash();
 }
 
 bool Smache::iremap(const char* name, Hash key)
