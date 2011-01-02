@@ -1,0 +1,80 @@
+#! /bin/sh
+#
+### BEGIN INIT INFO
+# Provides:          smached
+# Required-Start:    $local_fs $network
+# Required-Stop:     $local_fs $network
+# Should-Start:      
+# Should-Stop:       
+# Default-Start:     2 3 4 5
+# Default-Stop:      1
+# Short-Description: Smache distributed data store
+# Description:       smached provides distributed data storage.
+### END INIT INFO
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DAEMON=/usr/bin/smached
+NAME=smached
+DESC="smache distributed data store"
+
+test -x $DAEMON || exit 0
+
+LOG=/var/log/smached.log
+DAEMON_OPTS="-v -l $LOG /etc/smached"
+
+set -e
+
+case "$1" in
+  start)
+	echo -n "Starting $DESC: "
+	start-stop-daemon --start --quiet -m -b --pidfile /var/run/$NAME.pid \
+		--exec $DAEMON -- $DAEMON_OPTS
+	echo "$NAME."
+	;;
+  stop)
+	echo -n "Stopping $DESC: "
+    $0 status >/dev/null && \
+	start-stop-daemon --stop --oknodo --quiet --pidfile /var/run/$NAME.pid && \
+    rm /var/run/$NAME.pid
+	echo "$NAME."
+	;;
+  force-reload)
+	# check whether $DAEMON is running. If so, restart.
+	start-stop-daemon --stop --test --quiet --pidfile /var/run/$NAME.pid \
+	&& $0 restart \
+	|| exit 0
+	;;
+  restart)
+	echo -n "Restarting $DESC: "
+	start-stop-daemon --stop --oknodo --quiet --pidfile /var/run/$NAME.pid
+	sleep 1
+	start-stop-daemon --start --quiet -m -b --pidfile /var/run/$NAME.pid \
+        --exec $DAEMON -- $DAEMON_OPTS
+	echo "$NAME."
+	;;
+  status)
+	if [ -s /var/run/$NAME.pid ]; then
+            RUNNING=$(cat /var/run/$NAME.pid)
+            if [ -d /proc/$RUNNING ]; then
+                echo "$NAME is running."
+                exit 0
+            fi
+
+            # No such PID, or executables don't match.
+            echo "$NAME is not running, but pidfile existed."
+            rm /var/run/$NAME.pid
+            exit 1
+        else
+            rm -f /var/run/$NAME.pid
+            echo "$NAME not running."
+            exit 1
+        fi
+	;;
+  *)
+	N=/etc/init.d/$NAME
+	echo "Usage: $N {start|stop|restart|force-reload|status}" >&2
+	exit 1
+	;;
+esac
+
+exit 0

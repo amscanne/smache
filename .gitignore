@@ -1,0 +1,12 @@
+debian/debhelper.log
+debian/files
+debian/postinst.debhelper
+debian/prerm.debhelper
+debian/substvars
+debian/tmp
+lib/*.o
+lib/*.so
+python/build/
+python/native.py
+python/smache/native.py
+python/swig_wrap.cpp
