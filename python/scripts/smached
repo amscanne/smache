@@ -2,6 +2,7 @@
 
 import os
 import sys
+import getopt
 
 import smache
 
@@ -36,7 +37,7 @@ def daemonize():
     os.dup2(so.fileno(), sys.stdout.fileno())
 
 def usage():
-    sys.stderr.write("usage: %s [--log=<file>] [--daemonize] [--verbose] [--config=<config>] [--help]" % sys.argv[0])
+    sys.stderr.write("usage: %s [--log=<file>] [--daemonize] [--verbose] [--config=<config>] [--help]\n" % sys.argv[0])
 
 def main():
     try:
@@ -66,7 +67,7 @@ def main():
 
     # Daemonize if necessary.
     if daemon:
-        daemonize(log)
+        daemonize()
 
     # Send our logs to the appropriate place.
     if log:
@@ -75,9 +76,15 @@ def main():
 
     # Check that we have a config.
     if not(config):
-        sys.stderr.write("Unable to start without a config.\n")
+        sys.stderr.write("unable to start without a config\n")
+        usage()
         sys.exit(1)
 
-    # Run the server.
-    instance = smache.Smache(config)
-    instance.run()
+    # Load the config.
+    c = smache.Config(config)
+
+    # Run everything.
+    smache.go(c)
+
+if __name__ == "__main__":
+    main()

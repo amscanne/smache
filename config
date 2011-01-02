@@ -3,25 +3,25 @@
 # This file contains the defaults.
 #
 
-# [cas]
+[cas]
 # algo = rabin
-# size = 512
-# compression = lzo
+# blocksize = 1024
+# compression = true
 
-# [server]
+[server]
 # port = 10000
 # address = 0.0.0.0
 
-# [cluster]
+[cluster]
 # n = 3
 # r = 2
 # w = 2
-# zone = zone
 
-# [seeds]
+[seeds]
 # one = 10.0.0.1:10000
 # two = 10.0.0.2:10000
 
-# [stores]
+[stores]
 # one = /mnt/disk1/
 # two = /mnt/disk2/
+tmp = /tmp/

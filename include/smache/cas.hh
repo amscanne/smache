@@ -5,8 +5,6 @@
 #ifndef _CAS_HH_
 #define _CAS_HH_
 
-#include <smache/cas.hh>
-
 class Chunker {
 protected:
     uint32_t block;

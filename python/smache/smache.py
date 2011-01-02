@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 
 import native
+
 from chunks import *
 from exceptions import *
 
-#
-# The base entrace to the service.
-#
-
 class Smache(native.Smache):
+    compression = False
+
+    def __init__(self, r, w, n, cas, compression):
+        native.Smache.__init__(self, r, w, n, cas)
+        self.compression = compression        
+
     def create(self, fd, offset, length):
         # h = self.dcreate(fd, offset, length)
         pass

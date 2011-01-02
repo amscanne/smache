@@ -6,25 +6,41 @@ from getopt import getopt
 
 from constants import *
 
-class Config:
+class ConfigBase:
     def set(self, key, value):
         try:
             if not(self._set_(key, value)):
-                raise ConfigException("Invalid key: " + key)
+                raise ConfigException("invalid key: " + key)
         except ConfigException, ce:
             raise ce
         except:
-            raise ConfigException("Error setting key: " + key)
+            raise ConfigException("error setting key: " + key)
+
     def _set_(self, key, value):
         return True
 
-class SmacheConfig(Config):
+class SmacheConfig(ConfigBase):
+    algo        = DEFAULT_ALGO
+    blocksize   = DEFAULT_BLOCKSIZE
+    compression = DEFAULT_COMPRESSION
+    
     def _set_(self, key, value):
-        pass
-    def __str__(self)
-        return str(self.values)
+        if key == "algo":
+            self.algo = algo
+            return True
+        elif key == "blocksize":
+            self.blocksize = int(value)
+            return self.blocksize > 0
+        elif key == "compression":
+            self.compression = value.tolower() == "true"
+            return True
+        else:
+            return False
 
-class ServerConfig(Config):
+    def _str_(self):
+        return "algo=%s blocksize=%d compression=%s" % (self.algo, self.blocksize, str(self.compression))
+
+class ServerConfig(ConfigBase):
     address = DEFAULT_ADDRESS
     port    = DEFAULT_PORT
 
@@ -38,14 +54,13 @@ class ServerConfig(Config):
         else:
             return False
 
-    def __str__(self)
-        return str(self.values)
+    def _str_(self):
+        return "address=%s port=%d" % (self.address, self.port)
 
-class ClusterConfig(Config):
+class ClusterConfig(ConfigBase):
     n    = DEFAULT_N
     r    = DEFAULT_R
     w    = DEFAULT_W
-    zone = DEFAULT_ZONE
 
     def _set_(self, key, value):
         if key == "n":
@@ -57,31 +72,29 @@ class ClusterConfig(Config):
         elif key == "w":
             self.w = int(value)
             return self.w > 0
-        elif key == "zone":
-            self.zone = value
-            return True
         else:
             return False
-    def __str__(self)
-        return "n=%d r=%d w=%d zone=%s" % (self.n, self.r, self.w, self.zone)
 
-class FullConfig(Config):
+    def __str__(self):
+        return "n=%d r=%d w=%d" % (self.n, self.r, self.w)
+
+class Config:
     smache  = SmacheConfig
     server  = ServerConfig
     cluster = ClusterConfig
     seeds   = {}
     stores  = {}
 
-    def __init__(self, files):
-        Config.__init__(self)
-        config = ConfigParser(self.defaults)
-        for f in files:
-            config.read(f)
+    def __init__(self, f):
+        config = ConfigParser({})
+        config.read(f)
+
+        # Parse each of the sections.
         for s in config.sections():
             for i in config.items(s):
-                self.set(s + ":" + i, config.get(s, i))
+                self.set(s, i[0], i[1])
 
-    def _set_(self, key, value):
+    def set(self, s, key, value):
         if s == "smache":
             return self.smache.set(i, config.get(s, i))
         elif s == "server":
@@ -89,10 +102,12 @@ class FullConfig(Config):
         elif s == "cluster":
             return self.cluster.set(i, config.get(s, i))
         elif s == "stores":
-            self.stores[i] = config.get(s, i)
+            self.stores[key] = value
         elif s == "seeds":
-            self.seeds[i] = config.get(s, i)
+            self.seeds[key] = value
         else:
-            raise ConfigException("Invalid key: " + key)
+            raise ConfigException("invalid key: " + key)
 
-    def __str__(self
+    def __str__(self):
+        return "smache[%s]\nserver[%s]\ncluster[%s]\nseeds%s\nstores%s" % \
+         (str(self.smache), str(self.server), str(self.cluster), str(self.seeds), str(self.stores))

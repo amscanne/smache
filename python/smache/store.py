@@ -96,5 +96,8 @@ class Store(native.Store):
     def countMeta(self):
         return native.Store.countMeta(self)
 
+    def __repr__(self):
+        return str(self)
+
     def __str__(self):
         return "%s[buckets=%d]" % (self.directory, len(self.buckets.all()))

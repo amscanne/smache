@@ -16,11 +16,16 @@ class Smache;
 
 class Smache {
 protected:
+    uint32_t r;
+    uint32_t w;
+    uint32_t n;
+
     BackendPool backends;
     WorkPool work;
+    Chunker* chunker;
 
 public:
-    Smache();
+    Smache(uint32_t r, uint32_t w, uint32_t n, Chunker* chunker);
     ~Smache();
 
     // Data manipulation.
