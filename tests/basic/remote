@@ -1,0 +1,75 @@
+#!/usr/bin/env python
+
+import smache
+
+class Harness:
+    def _get(self, key):
+        print "get(%s)" % smache.Hash(key)
+        return native.Chunk()
+    def _head(self, key):
+        print "head(%s)" % smache.Hash(key)
+        return native.Chunk()
+    def _add(self, chunk):
+        print "add(%s)" % smache.Chunk(chunk)
+        return True
+    def _remove(self, key):
+        print "remove(%s)" % smache.Hash(key)
+        return True
+    def _adjrefs(self, key, delta):
+        print "adjrefs(%s,%d)" % (smache.Hash(key), delta)
+        return True
+    def _countAll(self):
+        print "countAll()"
+        return 0
+    def _fetchAll(self, s, c):
+        print "fetchAll(%d, %d)" % (s, c)
+        return []
+    def _countData(self):
+        print "countData()"
+        return 0
+    def _fetchData(self, s, c):
+        print "fetchData(%d, %d)" % (s, c)
+        return []
+    def _countMeta(self):
+        print "countMeta()"
+        return 0
+    def _fetchMeta(self, s, c):
+        print "fetchMeta(%d, %d)" % (s, c)
+        return []
+    def _countIndex(self):
+        print "countIndex()"
+        return 0
+    def _fetchIndex(self, s, c):
+        print "fetchIndex(%d, %d)" % (s, c)
+        return []
+        
+h = smache.Hash()
+c = smache.Chunk()
+r = smache.native.Remote(Harness())
+
+print "GET"
+r.get(h)
+print "HEAD"
+r.head(h)
+print "ADD"
+r.add(c)
+print "REMOVE"
+r.remove(h)
+print "ADJREFS"
+r.adjrefs(h, 255)
+print "COUNTALL"
+r.countAll()
+print "COUNTDATA"
+r.countData()
+print "COUNTMETA"
+r.countMeta()
+print "COUNTINDEX"
+r.countIndex()
+print "FETCHALL"
+r.fetchAll(65,255)
+print "FETCHDATA"
+r.fetchData(65,255)
+print "FETCHMETA"
+r.fetchMeta(65,255)
+print "FETCHINDEX"
+r.fetchIndex(65,255)

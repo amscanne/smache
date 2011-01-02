@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+
+import os
+import random
+import base64
+
+import smache
+
+try:
+    os.makedirs("scratch")
+except:
+    pass
+
+def rand1(leng):
+    nbits = leng * 6 + 1
+    bits = random.getrandbits(nbits)
+    uc = u"%0x" % bits
+    newlen = int(len(uc) / 2) * 2
+    ba = bytearray.fromhex(uc[:newlen])
+    return base64.urlsafe_b64encode(str(ba))[:leng]
+
+s = smache.Store("scratch")
+h = smache.Hash()
+c = smache.Chunk()
+
+for i in range(0, 100):
+    c.set(rand1(1024))
+    print "Adding",c
+    s.add(c)
+
+print s
+print s.countAll()
+print s.countData()
+print s.countMeta()
+print s.countIndex()
+print s.fetchAll(0, 3)
+print s.fetchData(0, 3)
+print s.fetchMeta(0, 3)
+print s.fetchIndex(0, 3)
