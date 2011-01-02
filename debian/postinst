@@ -1,0 +1,4 @@
+#!/bin/bash
+
+update-rc.d smached defaults
+/etc/init.d/smached force-reload

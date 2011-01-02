@@ -2,25 +2,22 @@
 
 LIBRARY=libsmache.so
 OBJECTS=store.o smache.o chunk.o cas.o log.o worker.o
-CPPFLAGS:=-Wall -g -fPIC -I../include -I/opt/local/include -D_FILE_OFFSET_BITS=64
-LIBFLAGS:=-lc -llzo2 -lmhash -lpthread
-LDFLAGS:=-g -L/opt/local/lib -L/opt/local/lib/db44 $(LIBFLAGS)
+CPPFLAGS:=$(CFLAGS) -Wall -fPIC -I../include -D_FILE_OFFSET_BITS=64
+LINKFLAGS:=$(LDFLAGS) -lc -llzo2 -lmhash -lpthread
 CPP:=g++
+DESTDIR:=/
 
 all: $(LIBRARY) $(TESTS)
 
 install:
-	@mkdir -p /usr/lib
-	@install -m 0755 -o 0 -g 0 $(LIBRARY) /usr/lib
-
-dist:
-	@false # FIXME, not yet implemented.
+	@mkdir -p $(DESTDIR)/usr/lib
+	@install -m 0755 -o 0 -g 0 $(LIBRARY) $(DESTDIR)/usr/lib
 
 clean:
 	@rm -f $(OBJECTS) $(LIBRARY) $(TESTS)
 
 $(LIBRARY): $(OBJECTS)
-	$(CPP) -o $@ -shared $(LDFLAGS) $^
+	$(CPP) -o $@ -shared $(LINKFLAGS) $^
 
 %.o: %.cc $(wildcard ../include/smache/*.hh)
 	$(CPP) $(CPPFLAGS) -o $@ -c $<

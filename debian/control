@@ -1,0 +1,14 @@
+Source: smache
+Section: unknown
+Priority: extra
+Maintainer: Adin Scannell <adin@scannell.ca>
+Build-Depends: debhelper (>= 7.0.50~), liblzo2-dev, libmhash-dev, python-dev, swig
+Standards-Version: 3.8.4
+Homepage: http://github.com/amscanne/smache
+
+Package: smache
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: A distributed data store
+ Smache is a distributed data store which uses a content-hashing 
+ strategy to maximize distribution of data.

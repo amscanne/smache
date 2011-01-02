@@ -6,68 +6,28 @@ import getopt
 
 import smache
 
-def daemonize():
-    # Do first fork.
-    try: 
-        pid = os.fork() 
-        if pid > 0:
-            sys.exit(0)
-    except OSError, e: 
-        sys.stderr.write("fork failed: (%d) %s\n" % (e.errno, e.strerror))
-        sys.exit(1)
-
-    # Decouple from parent environment.
-    os.chdir("/") 
-    os.umask(0) 
-    os.setsid() 
-
-    # Do second fork.
-    try: 
-        pid = os.fork() 
-        if pid > 0:
-            sys.exit(0)
-    except OSError, e: 
-        sys.stderr.write("fork failed: (%d) %s\n" % (e.errno, e.strerror))
-        sys.exit(1)
-
-    # Redirect standard file descriptors.
-    si = open('/dev/null', 'r')
-    so = open('/dev/null', 'a+')
-    os.dup2(si.fileno(), sys.stdin.fileno())
-    os.dup2(so.fileno(), sys.stdout.fileno())
-
 def usage():
-    sys.stderr.write("usage: %s [--log=<file>] [--daemonize] [--verbose] [--config=<config>] [--help]\n" % sys.argv[0])
+    sys.stderr.write("usage: %s [--log=<file>] [--verbose] [--help] <config>\n" % sys.argv[0])
 
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "l:dvc:h", ["log=", "daemonize", "verbose", "config=", "help"])
+        opts, args = getopt.getopt(sys.argv[1:], "l:vh", ["log=", "verbose", "help"])
     except getopt.GetoptError, err:
         print str(err)
         usage()
         sys.exit(2)
 
-    log    = None
-    config = None
-    daemon = False
+    log = None
 
     # Parse all options.
     for o, a in opts:
         if o in ("-l", "--log"):
             log = a
-        elif o in ("-d", "--daemonize"):
-            daemon = True
         elif o in ("-v", "--verbose"):
             smache.setLogLevel(smache.getLogLevel())
-        elif o in ("-c", "--config"):
-            config = a
         elif o in ("-h", "--help"):
             usage()
             sys.exit()
-
-    # Daemonize if necessary.
-    if daemon:
-        daemonize()
 
     # Send our logs to the appropriate place.
     if log:
@@ -75,13 +35,13 @@ def main():
         os.dup2(se.fileno(), sys.stderr.fileno())
 
     # Check that we have a config.
-    if not(config):
+    if len(args) == 0:
         sys.stderr.write("unable to start without a config\n")
         usage()
         sys.exit(1)
 
-    # Load the config.
-    c = smache.Config(config)
+    # Load the configs.
+    c = smache.Config(args)
 
     # Run everything.
     smache.go(c)

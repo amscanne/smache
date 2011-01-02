@@ -1,0 +1,4 @@
+#!/bin/bash
+
+[ -x /etc/init.d/smached ] && /etc/init.d/smached stop
+update-rc.d -f smached remove

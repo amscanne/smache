@@ -85,14 +85,15 @@ class Config:
     seeds   = {}
     stores  = {}
 
-    def __init__(self, f):
+    def __init__(self, files):
         config = ConfigParser({})
-        config.read(f)
+        for f in files:
+            config.read(f)
 
-        # Parse each of the sections.
-        for s in config.sections():
-            for i in config.items(s):
-                self.set(s, i[0], i[1])
+            # Parse each of the sections.
+            for s in config.sections():
+                for i in config.items(s):
+                    self.set(s, i[0], i[1])
 
     def set(self, s, key, value):
         if s == "smache":
