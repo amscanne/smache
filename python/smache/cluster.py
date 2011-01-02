@@ -4,6 +4,8 @@ import sys
 import time
 import threading
 
+from log import log
+
 class ClusterManager(threading.Thread):
     r      = None
     w      = None

@@ -17,7 +17,7 @@ from native import setLogLevel, getLogLevel
 
 def go(config):
     # Print an initial welcome.
-    log("Starting...\n")
+    log("Starting...")
 
     # Create the CAS splitter based on algo and blocksize.
     if config.smache.algo == "rabin":
@@ -38,7 +38,7 @@ def go(config):
     stores = []
     for s in config.stores.items():
         store = Store(s[1])
-        log(" store %s -> %s\n" % (s[0], str(store)))
+        log(" store %s -> %s" % (s[0], str(store)))
         stores.append(store)
 
     # Create the cluster manager (detects hosts, etc.).
