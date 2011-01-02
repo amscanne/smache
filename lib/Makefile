@@ -1,25 +1,28 @@
 #!/usr/bin/make -f
 
 LIBRARY=libsmache.so
-OBJECTS=berkeleydb.o memcached.o protocol.o smache.o misc.o files.o hash.o compress.o cut.o
-CFLAGS:=-Wall -g -fPIC -I../include -I/opt/local/include
-LIBFLAGS:=-lc -llzo2 -lmhash -ldb
+OBJECTS=store.o smache.o chunk.o cas.o log.o worker.o
+CPPFLAGS:=-Wall -g -fPIC -I../include -I/opt/local/include -D_FILE_OFFSET_BITS=64
+LIBFLAGS:=-lc -llzo2 -lmhash -lpthread
 LDFLAGS:=-g -L/opt/local/lib -L/opt/local/lib/db44 $(LIBFLAGS)
-CC:=gcc
+CPP:=g++
 
-all: $(LIBRARY)
+all: $(LIBRARY) $(TESTS)
 
 install:
-	mkdir -p /usr/lib
-	install -m 0755 -o 0 -g 0 $(LIBRARY) /usr/lib
+	@mkdir -p /usr/lib
+	@install -m 0755 -o 0 -g 0 $(LIBRARY) /usr/lib
+
+dist:
+	@false # FIXME, not yet implemented.
 
 clean:
-	@rm -f $(OBJECTS) $(LIBRARY)
+	@rm -f $(OBJECTS) $(LIBRARY) $(TESTS)
 
 $(LIBRARY): $(OBJECTS)
-	$(CC) -o $@ -shared $(LDFLAGS) $^
+	$(CPP) -o $@ -shared $(LDFLAGS) $^
 
-%.o: %.c $(wildcard ../include/smache/*)
-	$(CC) $(CFLAGS) -o $@ -c $<
+%.o: %.cc $(wildcard ../include/smache/*.hh)
+	$(CPP) $(CPPFLAGS) -o $@ -c $<
 
 .PHONY: all install clean

@@ -1,24 +1,25 @@
 #!/usr/bin/make -f
 
-all: lib utils sanity
+all:
+	(cd lib && make)
+	(cd python && make)
 
 install: 
 	(cd lib && make install)
-	(cd utils && make install)
-	(cd include && make install)
+	(cd python && make install)
+
+dist:
+	(cd lib && make dist)
+	(cd python && make dist)
+
+tests: all
+	(cd tests && make test)
+debugs: all
+	(cd tests && make debug)
 
 clean:
 	(cd lib && make clean)
-	(cd utils && make clean)
-	rm sanity.*
+	(cd python && make clean)
+	(cd tests && make clean)
 
-lib:
-	(cd lib && make)
-
-utils:
-	(cd utils && make)
-
-sanity:
-	bash run-sanity
-
-.PHONY: all install clean lib utils sanity
+.PHONY: all dist install tests debugs clean

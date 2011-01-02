@@ -1,11 +1,27 @@
-[smache]
-index = /tmp/smache.index
-debug = 1
-progress = 1
-blockalgo = rabin
-blocksize = 512
-compression = lzo
+#
+# Smache config.
+# This file contains the defaults.
+#
 
-[berkeleydb]
-debug = 1
-filename = /tmp/smache.backend
+# [cas]
+# algo = rabin
+# size = 512
+# compression = lzo
+
+# [server]
+# port = 10000
+# address = 0.0.0.0
+
+# [cluster]
+# n = 3
+# r = 2
+# w = 2
+# zone = zone
+
+# [seeds]
+# one = 10.0.0.1:10000
+# two = 10.0.0.2:10000
+
+# [stores]
+# one = /mnt/disk1/
+# two = /mnt/disk2/
