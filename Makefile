@@ -1,25 +1,25 @@
 #!/usr/bin/make -f
 
 all:
-	(cd lib && make)
-	(cd python && make)
+	(cd lib && $(MAKE))
+	(cd python && $(MAKE))
 
 install: 
-	(cd lib && make install)
-	(cd python && make install)
+	(cd lib && $(MAKE) install)
+	(cd python && $(MAKE) install)
 
 dist:
-	(cd lib && make dist)
-	(cd python && make dist)
+	(cd lib && $(MAKE) dist)
+	(cd python && $(MAKE) dist)
 
 tests: all
-	(cd tests && make test)
+	(cd tests && $(MAKE) test)
 debugs: all
-	(cd tests && make debug)
+	(cd tests && $(MAKE) debug)
 
 clean:
-	(cd lib && make clean)
-	(cd python && make clean)
-	(cd tests && make clean)
+	(cd lib && $(MAKE) clean)
+	(cd python && $(MAKE) clean)
+	(cd tests && $(MAKE) clean)
 
 .PHONY: all dist install tests debugs clean
