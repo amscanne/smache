@@ -28,7 +28,7 @@ class PathHandler:
         self.handler.error()
 
     def get(self, path):
-        self.handler.error()
+        self.handler.notfound()
 
     def put(self, path):
         self.handler.error()
@@ -188,7 +188,7 @@ class IndexPath(PathHandler):
         else:
             h = self.smache.lookup(path)
             if h:
-                self.nandler.redirect('/chunks/%s' % str(h))
+                self.handler.redirect('/chunks/%s' % str(h))
             else:
                 self.handler.error()
 
@@ -257,6 +257,7 @@ class Server:
         def OK(self, headers = {}):
             self.send_response(200)
             self.send_header("Content-type", "text/plain")
+            log("Handled OK")
             for (k, v) in headers.items():
                 self.send_header(k, v)
             self.end_headers()

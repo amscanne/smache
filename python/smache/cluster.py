@@ -16,6 +16,12 @@ class Host:
     def __init__(self, url):
         (self.address, self.port) = url.split(":", 1)
 
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return "%s:%d" % (self.address, self.port)
+
 class ClusterManager(threading.Thread):
     r      = None
     w      = None
@@ -59,13 +65,10 @@ class ClusterManager(threading.Thread):
                 rval.append(b) 
         return rval
 
-    def hosts(self):
-        return []
-
     def run(self):
         log("Cluster manager running...")
         log(" r = %d, w = %d, n = %d" % (self.r, self.w, self.n))
-        log(" seeds = %s" % str(self.seeds))
+        log(" hosts = %s" % str(self.hosts))
         log(" stores = %s" % str(self.stores))
         while True:
             time.sleep(1.0)
