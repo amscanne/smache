@@ -68,24 +68,33 @@ class ChunkPath(ClusterInfoPath):
         ClusterInfoPath.__init__(self, handler, cluster)
         self.smache = smache
 
+    def range(self):
+        r = self.handler.headers['Content-Range']
+        m = re.match("bytes (.*)-(.*)/(.*)")
+        if m:
+            return (int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        else:
+            return None
+
     # Grab a listing of all hashes.
     def get(self, path):
         if path == '':
             self.handler.OK()
-            self.cluster.listAll(self.wfile)
+            self.cluster.listAll(self.handler.wfile)
         elif path == 'data':
             self.handler.OK()
-            self.cluster.listData(self.wfile)
+            self.cluster.listData(self.handler.wfile)
         elif path == 'meta':
             self.handler.OK()
-            self.cluster.listMeta(self.wfile)
+            self.cluster.listMeta(self.handler.wfile)
         else:
             l = self.handler.headers['Content-Length']
             r = self.handler.headers['Content-Range']
             h = Hash(path)
             c = self.smache.info(h)
             if c:
-                headers = { 'Content-Length': c.length(), 
+                headers = { 'Content-Range' : 'bytes %ld-%ld/%ld' % (r, r+l, c.length()),
+                            'Content-Length' : l,
                             'References' : c.references(),
                             'Type' : c.blocktype() }
                 self.handler.OK(headers)
@@ -99,7 +108,7 @@ class ChunkPath(ClusterInfoPath):
             h = Hash(path)
             c = self.smache.info(h)
             if c:
-                headers = { 'Content-Length': c.length(), 
+                headers = { 'Content-Length' : c.length(),
                             'References' : c.references(),
                             'Type' : c.blocktype() }
                 self.handler.OK(headers)
@@ -156,8 +165,8 @@ class ChunkPath(ClusterInfoPath):
         if path == '':
             self.handler.error()
         else:
-            l = self.handler.headers['Content-Length']
             r = self.handler.headers['Content-Range']
+            m = re.match("bytes (.*)-(.*)/(.*)")
             h = Hash(path)
             h = self.smache.remove(h, r, l)
             if h:
@@ -184,7 +193,7 @@ class IndexPath(PathHandler):
     def get(self, path):
         if path == '':
             self.handler.OK()
-            self.cluster.listIndices(self.wfile)
+            self.cluster.listIndices(self.handler.wfile)
         else:
             h = self.smache.lookup(path)
             if h:

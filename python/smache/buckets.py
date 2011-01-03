@@ -3,6 +3,8 @@
 import os
 import random
 
+from constants import *
+
 class Buckets:
     buckets = []
 
